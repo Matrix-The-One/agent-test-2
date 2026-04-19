@@ -6,6 +6,8 @@
     "dev": "concurrently -n server,web -c blue,green \"pnpm dev:server\" \"pnpm dev:web\"",
     "dev:server": "pnpm --filter @agent/server start:dev",
     "dev:web": "pnpm --filter @agent/web dev",
+    "api:spec": "pnpm --filter @agent/server openapi:export",
+    "api:generate": "pnpm api:spec && pnpm --filter @agent/web api:generate",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"

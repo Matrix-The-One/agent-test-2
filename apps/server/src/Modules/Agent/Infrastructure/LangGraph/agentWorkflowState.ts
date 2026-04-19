@@ -20,7 +20,7 @@ export const agentWorkflowStateSchema = z.object({
   images: z.array(agentImageInputSchema).max(4).default([]),
   message: z.string().trim().max(4000).default(""),
   requestedMode: z.enum(AGENT_INTENTS).optional(),
-  threadId: z.string().uuid().optional(),
+  threadId: z.uuid().optional(),
   intent: z.enum(AGENT_INTENTS).default("chat"),
   intentReason: z.string().default(""),
   skillSelection: z

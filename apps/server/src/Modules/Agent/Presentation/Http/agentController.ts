@@ -1,15 +1,24 @@
 import { Body, Controller, Inject, Post, Res } from "@nestjs/common";
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiProduces,
+  ApiTags,
+} from "@nestjs/swagger";
 import { pipeUIMessageStreamToResponse } from "ai";
 import type { FastifyReply } from "fastify";
 
+import { RawResponse } from "../../../../Common/Decorators/rawResponse.js";
 import { ZodValidationPipe } from "../../../../Common/Pipes/zodValidationPipe.js";
 import {
   agentChatRequestSchema,
-  type AgentChatRequest,
 } from "../../Domain/agentSchemas.js";
 import { AgentService } from "../../Application/Services/agentService.js";
+import { AgentChatRequestDto } from "./agentHttpDtos.js";
 
 @Controller("agent")
+@ApiTags("agent")
 export class AgentController {
   @Inject(AgentService)
   private readonly agentService!: AgentService;
@@ -32,8 +41,22 @@ export class AgentController {
   }
 
   @Post("stream")
+  @RawResponse()
+  @ApiConsumes("application/json")
+  @ApiProduces("text/event-stream")
+  @ApiBody({ type: AgentChatRequestDto })
+  @ApiOkResponse({
+    content: {
+      "text/event-stream": {
+        schema: {
+          type: "string",
+        },
+      },
+    },
+    description: "AI SDK UI message stream.",
+  })
   async streamAgentReply(
-    @Body(new ZodValidationPipe(agentChatRequestSchema)) body: AgentChatRequest,
+    @Body(new ZodValidationPipe(agentChatRequestSchema)) body: AgentChatRequestDto,
     @Res() reply: FastifyReply,
   ) {
     try {

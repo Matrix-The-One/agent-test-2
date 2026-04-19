@@ -8,3 +8,5 @@ apps/*/.env
 apps/*/.env.*
 !apps/*/.env.example
 !apps/*/.env.*.example
+apps/*/src/generated/
+server-*.log

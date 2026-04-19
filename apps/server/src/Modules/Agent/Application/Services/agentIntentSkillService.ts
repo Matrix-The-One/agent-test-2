@@ -57,33 +57,20 @@ export class AgentIntentSkillService {
 
     if (intent === "writing") {
       skillIds.push("content-creation");
-
-      if (
-        containsAny(normalizedMessage, [
-          "word",
-          "pdf",
-          "docx",
-          "文档",
-          "报告",
-          "方案书",
-          "交付件",
-          "模板",
-        ])
-      ) {
-        skillIds.push("document-production");
-      }
+      skillIds.push("document-production");
 
       return {
         reason:
           imageRole === "reference"
-            ? "writing 意图下图片作为参考素材, 挂载 content-creation, 并按文档输出关键词补充 document-production。"
-            : "writing 意图默认挂载 content-creation, 并按文档输出关键词补充 document-production。",
+            ? "writing 意图下图片作为参考素材, 默认走 content-creation -> document-production 固定链路。"
+            : "writing 意图默认走 content-creation -> document-production 固定链路。",
         skillIds: this.deduplicate(skillIds),
       };
     }
 
     if (intent === "coding") {
       skillIds.push("code-engineering");
+      skillIds.push("quality-guard");
 
       if (
         containsAny(normalizedMessage, ["架构", "设计", "模块划分", "目录结构", "分层"])
@@ -104,16 +91,10 @@ export class AgentIntentSkillService {
         skillIds.push("delivery-planning");
       }
 
-      if (
-        containsAny(normalizedMessage, ["测试", "review", "评审", "质量", "回归", "风险"])
-      ) {
-        skillIds.push("quality-guard");
-      }
-
       return {
         reason: hasImages
-          ? `coding 意图下图片角色为 ${imageRole}, 默认挂载 code-engineering, 并按架构、交付、质量关键词补充相关 skill。`
-          : "coding 意图默认挂载 code-engineering, 并按架构、交付、质量关键词补充相关 skill。",
+          ? `coding 意图下图片角色为 ${imageRole}, 默认走 engineering -> quality 固定链路, 并按架构、交付关键词插入前置 specialist。`
+          : "coding 意图默认走 engineering -> quality 固定链路, 并按架构、交付关键词插入前置 specialist。",
         skillIds: this.deduplicate(skillIds),
       };
     }

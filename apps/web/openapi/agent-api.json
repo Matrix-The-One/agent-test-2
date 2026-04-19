@@ -1,0 +1,1712 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/HealthStatusDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/users/ensure": {
+      "post": {
+        "operationId": "ensureUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnsureUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/UserRecordDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/users/{userId}": {
+      "get": {
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/UserRecordDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/conversations": {
+      "get": {
+        "operationId": "listConversations",
+        "parameters": [
+          {
+            "name": "query",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 120,
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ConversationListResultDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "conversations"
+        ]
+      },
+      "post": {
+        "operationId": "createConversation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ConversationRecordDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/conversations/{conversationId}": {
+      "patch": {
+        "operationId": "updateConversation",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConversationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ConversationRecordDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "conversations"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteConversation",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/DeleteConversationResultDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/conversations/{conversationId}/messages": {
+      "get": {
+        "operationId": "getConversationMessages",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/ConversationMessageRecordDto"
+                      },
+                      "type": "array",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/agent/skills": {
+      "get": {
+        "operationId": "getCatalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SkillCatalogDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "agent-skills"
+        ]
+      }
+    },
+    "/api/agent/stream": {
+      "post": {
+        "operationId": "streamAgentReply",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentChatRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "AI SDK UI message stream."
+          }
+        },
+        "tags": [
+          "agent"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Agent API",
+    "description": "OpenAPI contract for the Agent workspace backend.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "HealthStatusDto": {
+        "type": "object",
+        "properties": {
+          "databaseConfigured": {
+            "type": "boolean"
+          },
+          "databaseReady": {
+            "type": "boolean"
+          },
+          "memoryEnabled": {
+            "type": "boolean"
+          },
+          "model": {
+            "type": "string"
+          },
+          "providerConfigured": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        },
+        "required": [
+          "databaseConfigured",
+          "databaseReady",
+          "memoryEnabled",
+          "model",
+          "providerConfigured",
+          "status"
+        ]
+      },
+      "ApiErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true,
+            "example": null,
+            "nullable": true
+          },
+          "errorMsg": {
+            "type": "string",
+            "example": "Request failed"
+          },
+          "errorCode": {
+            "type": "string",
+            "example": "BAD_REQUEST",
+            "nullable": true
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "path": {
+            "type": "string",
+            "example": "/api/conversations"
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 400
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-04-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "data",
+          "errorMsg"
+        ]
+      },
+      "UserRecordDto": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "displayName",
+          "id",
+          "updatedAt"
+        ]
+      },
+      "EnsureUserRequestDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "default": "Local User",
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "displayName"
+        ]
+      },
+      "ConversationRecordDto": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "messageCount": {
+            "type": "number"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "writing",
+              "coding",
+              "image"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "messageCount",
+          "title",
+          "updatedAt",
+          "userId"
+        ]
+      },
+      "ConversationListResultDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConversationRecordDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateConversationRequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "writing",
+              "coding",
+              "image"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "UpdateConversationRequestDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "writing",
+              "coding",
+              "image"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "AgentImageInputDto": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "mediaType": {
+            "type": "string",
+            "example": "image/png"
+          },
+          "url": {
+            "type": "string",
+            "example": "data:image/png;base64,..."
+          }
+        },
+        "required": [
+          "mediaType",
+          "url"
+        ]
+      },
+      "AgentContextCompactionDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "applied": {
+            "type": "boolean"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "running-summary"
+            ]
+          },
+          "summaryMessageCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "active",
+          "applied",
+          "strategy",
+          "summaryMessageCount"
+        ]
+      },
+      "AgentContextBudgetDto": {
+        "type": "object",
+        "properties": {
+          "countingMode": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "tokenizer",
+              "estimated"
+            ]
+          },
+          "compaction": {
+            "$ref": "#/components/schemas/AgentContextCompactionDto"
+          },
+          "contextWindowTokens": {
+            "type": "number"
+          },
+          "inputTokens": {
+            "type": "number"
+          },
+          "maxConversationTokens": {
+            "type": "number"
+          },
+          "model": {
+            "type": "string"
+          },
+          "reservedInstructionTokens": {
+            "type": "number"
+          },
+          "reservedOutputTokens": {
+            "type": "number"
+          },
+          "usagePercent": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "countingMode",
+          "compaction",
+          "contextWindowTokens",
+          "inputTokens",
+          "maxConversationTokens",
+          "model",
+          "reservedInstructionTokens",
+          "reservedOutputTokens",
+          "usagePercent"
+        ]
+      },
+      "AgentTraceSpecialistDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "project",
+              "architecture",
+              "delivery",
+              "quality",
+              "content",
+              "engineering",
+              "document"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "skillIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "project-context",
+                "solution-architecture",
+                "delivery-planning",
+                "quality-guard",
+                "content-creation",
+                "code-engineering",
+                "document-production"
+              ]
+            }
+          },
+          "skillNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "category",
+          "label",
+          "model",
+          "skillIds",
+          "skillNames"
+        ]
+      },
+      "AgentExecutionResponderDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "stepId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "model",
+          "stepId"
+        ]
+      },
+      "AgentTraceStepDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "project",
+              "architecture",
+              "delivery",
+              "quality",
+              "content",
+              "engineering",
+              "document"
+            ]
+          },
+          "completedAt": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "number"
+          },
+          "expectedOutput": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "specialist",
+              "responder"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "running",
+              "completed"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "task": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "model",
+          "status",
+          "title"
+        ]
+      },
+      "AgentExecutionPlanDto": {
+        "type": "object",
+        "properties": {
+          "availableSpecialists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTraceSpecialistDto"
+            }
+          },
+          "executionMode": {
+            "type": "string",
+            "enum": [
+              "image-placeholder",
+              "dynamic-supervisor",
+              "fixed-chain"
+            ]
+          },
+          "responder": {
+            "$ref": "#/components/schemas/AgentExecutionResponderDto"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTraceStepDto"
+            }
+          }
+        },
+        "required": [
+          "availableSpecialists",
+          "executionMode",
+          "responder",
+          "steps"
+        ]
+      },
+      "AgentTraceRoutingDto": {
+        "type": "object",
+        "properties": {
+          "imageRoleReason": {
+            "type": "string"
+          },
+          "intentReason": {
+            "type": "string"
+          },
+          "skillIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "project-context",
+                "solution-architecture",
+                "delivery-planning",
+                "quality-guard",
+                "content-creation",
+                "code-engineering",
+                "document-production"
+              ]
+            }
+          },
+          "skillSelectionReason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageRoleReason",
+          "intentReason",
+          "skillIds",
+          "skillSelectionReason"
+        ]
+      },
+      "AgentExecutionTraceDto": {
+        "type": "object",
+        "properties": {
+          "contextBudget": {
+            "$ref": "#/components/schemas/AgentContextBudgetDto"
+          },
+          "execution": {
+            "$ref": "#/components/schemas/AgentExecutionPlanDto"
+          },
+          "hasImages": {
+            "type": "boolean"
+          },
+          "imageRole": {
+            "type": "string",
+            "enum": [
+              "none",
+              "analyze",
+              "reference",
+              "edit"
+            ]
+          },
+          "intent": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "writing",
+              "coding",
+              "image"
+            ]
+          },
+          "requestedMode": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "writing",
+              "coding",
+              "image"
+            ]
+          },
+          "routing": {
+            "$ref": "#/components/schemas/AgentTraceRoutingDto"
+          },
+          "routingDurationMs": {
+            "type": "number"
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "threadId": {
+            "type": "string"
+          },
+          "totalDurationMs": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contextBudget",
+          "execution",
+          "hasImages",
+          "imageRole",
+          "intent",
+          "routing",
+          "routingDurationMs",
+          "startedAt",
+          "threadId",
+          "updatedAt"
+        ]
+      },
+      "ConversationMessageRecordDto": {
+        "type": "object",
+        "properties": {
+          "createdAt": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentImageInputDto"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "system",
+              "user",
+              "assistant"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "trace": {
+            "$ref": "#/components/schemas/AgentExecutionTraceDto"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "images",
+          "role",
+          "text"
+        ]
+      },
+      "DeleteConversationResultDto": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "conversationId",
+          "deleted"
+        ]
+      },
+      "PublicAgentSkillDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "project",
+              "architecture",
+              "delivery",
+              "quality",
+              "content",
+              "engineering",
+              "document"
+            ]
+          },
+          "categoryLabel": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "enum": [
+              "project-context",
+              "solution-architecture",
+              "delivery-planning",
+              "quality-guard",
+              "content-creation",
+              "code-engineering",
+              "document-production"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "popularity": {
+            "type": "string",
+            "enum": [
+              "core",
+              "popular"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "toolNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "useCases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "category",
+          "categoryLabel",
+          "description",
+          "id",
+          "name",
+          "popularity",
+          "tags",
+          "toolNames",
+          "useCases"
+        ]
+      },
+      "SkillCatalogDto": {
+        "type": "object",
+        "properties": {
+          "popularSkillIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "project-context",
+                "solution-architecture",
+                "delivery-planning",
+                "quality-guard",
+                "content-creation",
+                "code-engineering",
+                "document-production"
+              ]
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicAgentSkillDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "popularSkillIds",
+          "skills",
+          "total"
+        ]
+      },
+      "AgentChatRequestDto": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "default": [],
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentImageInputDto"
+            }
+          },
+          "message": {
+            "type": "string",
+            "default": "",
+            "maxLength": 4000
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "writing",
+              "coding",
+              "image"
+            ]
+          },
+          "threadId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "images",
+          "message"
+        ]
+      }
+    }
+  }
+}

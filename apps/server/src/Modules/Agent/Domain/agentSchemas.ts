@@ -13,18 +13,12 @@ export const agentChatRequestSchema = z
     images: z.array(agentChatImageInputSchema).max(4).default([]),
     message: z.string().trim().max(4000).default(""),
     mode: z.enum(AGENT_INTENTS).optional(),
-    threadId: z.string().uuid().optional(),
+    threadId: z.uuid().optional(),
+    userId: z.uuid().optional(),
   })
-  .superRefine((value, context) => {
-    if (value.message || value.images.length > 0) {
-      return;
-    }
-
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "message 或 images 至少提供一个。",
-      path: ["message"],
-    });
+  .refine((value) => Boolean(value.message || value.images.length > 0), {
+    message: "message 或 images 至少提供一个。",
+    path: ["message"],
   });
 
 export type AgentChatRequest = z.infer<typeof agentChatRequestSchema>;

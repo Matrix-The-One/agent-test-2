@@ -6,6 +6,9 @@ import { z } from "zod";
 const emptyStringAsUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 
+const optionalModelSchema = () =>
+  z.preprocess(emptyStringAsUndefined, z.string().min(1).optional());
+
 const loadOptionalEnvFile = (path: string) => {
   const dotenvResult = loadDotenv({
     path,
@@ -33,17 +36,38 @@ for (const envFilePath of [
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3001),
-  APP_ORIGIN: z.string().url().default("http://localhost:5173"),
+  APP_ORIGIN: z.url().default("http://localhost:5173"),
+  DATABASE_URL: z.preprocess(
+    emptyStringAsUndefined,
+    z.string().min(1).optional(),
+  ),
   REQUEST_BODY_LIMIT_MB: z.coerce.number().int().positive().default(30),
-  OPENAI_MODEL: z.string().min(1).default("gpt-4.1-mini"),
+  OPENAI_MODEL: z.string().min(1).default("gpt-5.4-mini"),
   OPENAI_BASE_URL: z.preprocess(
     emptyStringAsUndefined,
-    z.string().url().optional(),
+    z.url().optional(),
   ),
   OPENAI_API_KEY: z.preprocess(
     emptyStringAsUndefined,
     z.string().min(1).optional(),
   ),
+  OPENAI_TOKEN_COUNT_BASE_URL: z.preprocess(
+    emptyStringAsUndefined,
+    z.url().optional(),
+  ),
+  OPENAI_TOKEN_COUNT_API_KEY: z.preprocess(
+    emptyStringAsUndefined,
+    z.string().min(1).optional(),
+  ),
+  AGENT_INTENT_MODEL: optionalModelSchema(),
+  AGENT_SUPERVISOR_MODEL: optionalModelSchema(),
+  AGENT_PROJECT_MODEL: optionalModelSchema(),
+  AGENT_CONTENT_MODEL: optionalModelSchema(),
+  AGENT_DOCUMENT_MODEL: optionalModelSchema(),
+  AGENT_ENGINEERING_MODEL: optionalModelSchema(),
+  AGENT_ARCHITECTURE_MODEL: optionalModelSchema(),
+  AGENT_DELIVERY_MODEL: optionalModelSchema(),
+  AGENT_QUALITY_MODEL: optionalModelSchema(),
 });
 
 export type Env = z.infer<typeof envSchema>;

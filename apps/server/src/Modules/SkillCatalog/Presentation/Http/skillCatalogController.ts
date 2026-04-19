@@ -1,13 +1,18 @@
 import { Controller, Get, Inject } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
 
+import { SkillCatalogDto } from "../../../../Common/OpenApi/openApiDtos.js";
+import { ApiEnvelopeResponse } from "../../../../Common/OpenApi/openApiResponse.js";
 import { AgentSkillsService } from "../../Application/Services/agentSkillsService.js";
 
 @Controller("agent/skills")
+@ApiTags("agent-skills")
 export class SkillCatalogController {
   @Inject(AgentSkillsService)
   private readonly skillsService!: AgentSkillsService;
 
   @Get()
+  @ApiEnvelopeResponse(SkillCatalogDto)
   getCatalog() {
     const skills = this.skillsService.getPublicCatalog();
 
