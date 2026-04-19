@@ -1,28 +1,41 @@
 import "reflect-metadata";
 
 import { Logger } from "@nestjs/common";
-import { NestFactory } from "@nestjs/core";
+import { NestFactory, HttpAdapterHost } from "@nestjs/core";
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from "@nestjs/platform-fastify";
 
-import { HttpExceptionFilter } from "./common/filters/http-exception.filter.js";
-import { AppConfigService } from "./config/app-config.service.js";
-import { AppModule } from "./app.module.js";
+import { HttpExceptionFilter } from "./Common/Filters/httpExceptionFilter.js";
+import { AppConfigService } from "./Config/appConfigService.js";
+import { validateEnv } from "./Config/env.js";
+import { AppModule } from "./appModule.js";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    cors: false,
-  });
+  const env = validateEnv(process.env);
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({
+      bodyLimit: env.REQUEST_BODY_LIMIT_MB * 1024 * 1024,
+    }),
+    {
+      cors: false,
+    },
+  );
 
-  const config = app.get(AppConfigService);
+  const runtimeConfig = app.get(AppConfigService);
+  const { httpAdapter } = app.get(HttpAdapterHost);
   const logger = new Logger("Bootstrap");
 
   app.setGlobalPrefix("api");
   app.enableCors({
-    origin: config.appOrigin,
+    origin: runtimeConfig.appOrigin,
   });
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new HttpExceptionFilter(httpAdapter));
 
-  await app.listen(config.port);
-  logger.log(`API ready at http://localhost:${config.port}/api`);
+  await app.listen(runtimeConfig.port);
+  logger.log(`API ready at http://localhost:${runtimeConfig.port}/api`);
 }
 
 void bootstrap();

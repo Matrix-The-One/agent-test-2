@@ -2,7 +2,7 @@ import type { HTMLAttributes } from "react";
 
 import { cn } from "@/shared/lib/utils";
 
-export function Badge({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+export const Badge = ({ className, ...props }: HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       className={cn(
@@ -12,4 +12,4 @@ export function Badge({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
       {...props}
     />
   );
-}
+};

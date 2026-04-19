@@ -4,5 +4,7 @@ dist
 .DS_Store
 apps/*/dist
 apps/*/node_modules
-.env
-apps/server/.env
+apps/*/.env
+apps/*/.env.*
+!apps/*/.env.example
+!apps/*/.env.*.example

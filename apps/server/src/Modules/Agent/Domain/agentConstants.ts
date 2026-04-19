@@ -1,0 +1,20 @@
+export const STACK_SUMMARY = {
+  backend: ["TypeScript", "NestJS", "LangChain", "LangGraph", "dotenv", "zod"],
+  frontend: [
+    "TypeScript",
+    "React 19",
+    "Vite",
+    "AI SDK UI",
+    "pnpm workspace",
+    "shadcn/ui",
+  ],
+} as const;
+
+export const RUNTIME_CAPABILITIES = [
+  "服务端按 NestJS feature modules 组织: Health / Agent / SkillCatalog",
+  "Agent 请求先做图片角色识别, 再做顶层意图识别和技能路由",
+  "对话执行基于 LangGraph / LangChain, 并带线程级记忆",
+  "SkillCatalog 覆盖项目上下文、架构设计、内容创作、代码工程和文档生产",
+  "服务端使用 Zod 做请求校验",
+  "前端通过 AI SDK UI 的流式协议接收消息",
+] as const;

@@ -1,5 +1,21 @@
 import type { UIMessage } from "@ai-sdk/react";
 
+export const CHAT_REQUEST_MODES = [
+  "chat",
+  "writing",
+  "coding",
+  "image",
+] as const;
+
+export type ChatRequestMode = (typeof CHAT_REQUEST_MODES)[number];
+
+export const CHAT_REQUEST_MODE_LABELS: Record<ChatRequestMode, string> = {
+  chat: "聊天回答",
+  coding: "代码编写",
+  image: "制作图片",
+  writing: "文章编写",
+};
+
 export type ChatMessageMetadata = {
   kind?: "clarification";
   suggestions?: string[];
@@ -7,6 +23,11 @@ export type ChatMessageMetadata = {
 };
 
 export type ChatMessage = UIMessage<ChatMessageMetadata>;
+export type ChatRequestImage = {
+  filename?: string;
+  mediaType: string;
+  url: string;
+};
 
 export type HealthState = {
   memoryEnabled: boolean;
@@ -20,5 +41,6 @@ export type ConversationPreview = {
   title: string;
   meta: string;
   active?: boolean;
+  mode?: ChatRequestMode;
   prompt?: string;
 };

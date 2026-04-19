@@ -3,33 +3,137 @@
 @import "streamdown/styles.css";
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @source "../../../../node_modules/streamdown/dist/*.js";
 @source "../../../../node_modules/@streamdown/code/dist/*.js";
 @source "../../../../node_modules/@streamdown/mermaid/dist/*.js";
 @source "../../../../node_modules/@streamdown/math/dist/*.js";
 @source "../../../../node_modules/@streamdown/cjk/dist/*.js";
 
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
 :root {
-  --app-bg: #ecece5;
-  --sidebar-bg: rgba(245, 245, 241, 0.94);
-  --main-surface: rgba(251, 251, 248, 0.92);
-  --surface: rgba(255, 255, 255, 0.96);
-  --surface-muted: rgba(244, 244, 239, 0.88);
-  --foreground: #111111;
-  --muted-foreground: #6b6b63;
-  --border: rgba(17, 17, 17, 0.08);
-  --border-strong: rgba(17, 17, 17, 0.12);
-  --ring: rgba(17, 17, 17, 0.2);
-  --accent-soft: #edf3ff;
-  --accent-strong: #2563eb;
-  --user-bubble: #ecece9;
-  --success: #13804c;
-  --danger: #b42318;
-  --radius: 1rem;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+  --app-bg: var(--background);
+  --sidebar-bg: var(--sidebar);
+  --main-surface: var(--background);
+  --surface: var(--card);
+  --surface-muted: var(--muted);
+  --border-strong: var(--border);
+  --accent-soft: var(--secondary);
+  --accent-strong: var(--secondary-foreground);
+  --user-bubble: var(--secondary);
+  --danger: var(--destructive);
+  --scrollbar-thumb: rgb(17 17 17 / 18%);
+  --scrollbar-thumb-hover: rgb(17 17 17 / 30%);
   --font-body: "Instrument Sans", "Noto Sans SC", sans-serif;
   --font-display: "Instrument Sans", "Noto Sans SC", sans-serif;
-  --shadow-soft: 0 18px 50px rgba(20, 20, 19, 0.05);
-  --shadow-panel: 0 28px 80px rgba(20, 20, 19, 0.08);
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-panel:
+    0 1px 2px 0 rgb(0 0 0 / 0.05),
+    0 8px 24px -12px rgb(0 0 0 / 0.12);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+  --scrollbar-thumb: rgb(255 255 255 / 20%);
+  --scrollbar-thumb-hover: rgb(255 255 255 / 34%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 * {
@@ -45,24 +149,6 @@ body {
   min-height: 100%;
   margin: 0;
   font-family: var(--font-body);
-  color: var(--foreground);
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.78), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(227, 234, 255, 0.6), transparent 24%),
-    linear-gradient(180deg, #efefe9 0%, #ecece5 100%);
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(17, 17, 17, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(17, 17, 17, 0.018) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: radial-gradient(circle at center, black 34%, transparent 100%);
 }
 
 button,
@@ -72,8 +158,61 @@ textarea {
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
   isolation: isolate;
+}
+
+/* Chrome 121+ standard props override ::-webkit-scrollbar, so keep them off Chromium. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+}
+
+@supports selector(::-webkit-scrollbar) {
+  *::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--scrollbar-thumb);
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-button,
+  *::-webkit-scrollbar-button:single-button,
+  *::-webkit-scrollbar-button:single-button:vertical:start:decrement,
+  *::-webkit-scrollbar-button:single-button:vertical:end:increment,
+  *::-webkit-scrollbar-button:single-button:horizontal:start:decrement,
+  *::-webkit-scrollbar-button:single-button:horizontal:end:increment,
+  *::-webkit-scrollbar-button:start:decrement,
+  *::-webkit-scrollbar-button:end:increment,
+  *::-webkit-scrollbar-button:start:increment,
+  *::-webkit-scrollbar-button:end:decrement {
+    display: none;
+    width: 0;
+    height: 0;
+    border: 0;
+    background: transparent;
+    -webkit-appearance: none;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 .streamdown {

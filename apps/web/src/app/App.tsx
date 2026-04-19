@@ -1,7 +1,5 @@
-import { ChatWorkspacePage } from "@/pages/chat-workspace/ui/chat-workspace-page";
+import { ChatWorkspacePage } from "@/pages/ChatWorkspace/ui/ChatWorkspacePage";
 
-export function App() {
-  return <ChatWorkspacePage />;
-}
+export const App = () => <ChatWorkspacePage />;
 
 export default App;
