@@ -1,0 +1,123 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap");
+@import "katex/dist/katex.min.css";
+@import "streamdown/styles.css";
+@import "tailwindcss";
+
+@source "../../../../node_modules/streamdown/dist/*.js";
+@source "../../../../node_modules/@streamdown/code/dist/*.js";
+@source "../../../../node_modules/@streamdown/mermaid/dist/*.js";
+@source "../../../../node_modules/@streamdown/math/dist/*.js";
+@source "../../../../node_modules/@streamdown/cjk/dist/*.js";
+
+:root {
+  --app-bg: #ecece5;
+  --sidebar-bg: rgba(245, 245, 241, 0.94);
+  --main-surface: rgba(251, 251, 248, 0.92);
+  --surface: rgba(255, 255, 255, 0.96);
+  --surface-muted: rgba(244, 244, 239, 0.88);
+  --foreground: #111111;
+  --muted-foreground: #6b6b63;
+  --border: rgba(17, 17, 17, 0.08);
+  --border-strong: rgba(17, 17, 17, 0.12);
+  --ring: rgba(17, 17, 17, 0.2);
+  --accent-soft: #edf3ff;
+  --accent-strong: #2563eb;
+  --user-bubble: #ecece9;
+  --success: #13804c;
+  --danger: #b42318;
+  --radius: 1rem;
+  --font-body: "Instrument Sans", "Noto Sans SC", sans-serif;
+  --font-display: "Instrument Sans", "Noto Sans SC", sans-serif;
+  --shadow-soft: 0 18px 50px rgba(20, 20, 19, 0.05);
+  --shadow-panel: 0 28px 80px rgba(20, 20, 19, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.78), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(227, 234, 255, 0.6), transparent 24%),
+    linear-gradient(180deg, #efefe9 0%, #ecece5 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(17, 17, 17, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 17, 17, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at center, black 34%, transparent 100%);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+.streamdown {
+  color: inherit;
+  font-size: 0.98rem;
+  line-height: 1.85;
+}
+
+.streamdown p:first-child {
+  margin-top: 0;
+}
+
+.streamdown p:last-child {
+  margin-bottom: 0;
+}
+
+.streamdown pre {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.2rem;
+  background: #101010;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+}
+
+.streamdown code {
+  font-size: 0.92em;
+}
+
+.streamdown :where(h1, h2, h3, h4) {
+  margin-top: 1.5em;
+  margin-bottom: 0.7em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.streamdown ul,
+.streamdown ol {
+  padding-left: 1.25rem;
+}
+
+.streamdown blockquote {
+  margin-left: 0;
+  padding-left: 1rem;
+  border-left: 3px solid rgba(17, 17, 17, 0.12);
+  color: var(--muted-foreground);
+}

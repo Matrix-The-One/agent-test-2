@@ -1,0 +1,8 @@
+node_modules
+dist
+.turbo
+.DS_Store
+apps/*/dist
+apps/*/node_modules
+.env
+apps/server/.env

@@ -1,0 +1,41 @@
+{
+  "name": "@agent/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "tsc -b && vp build",
+    "preview": "vp dev --host",
+    "lint": "tsc -p tsconfig.app.json --noEmit",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/react": "^3.0.170",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@streamdown/cjk": "1.0.3",
+    "@streamdown/code": "1.1.1",
+    "@streamdown/math": "1.0.2",
+    "@streamdown/mermaid": "1.0.2",
+    "ai": "^6.0.168",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "katex": "0.16.45",
+    "lucide-react": "^0.542.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-virtuoso": "^4.18.5",
+    "streamdown": "^2.5.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/node": "^24.6.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^6.0.3",
+    "vite": "^7.1.10",
+    "vite-plus": "^0.1.18"
+  }
+}
