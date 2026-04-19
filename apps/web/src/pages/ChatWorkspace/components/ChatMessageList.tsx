@@ -131,6 +131,7 @@ const getCountingModeSummary = (trace: ChatAgentTrace) => {
 type ChatMessageListProps = {
   isBusy: boolean;
   messages: ChatMessage[];
+  onScrollingChange?: (isScrolling: boolean) => void;
   onDraftSuggestion: (suggestion: string) => void;
   onSendSuggestion: (suggestion: string) => Promise<void>;
   scrollParent?: HTMLElement | null;
@@ -140,6 +141,7 @@ type ChatMessageListProps = {
 export const ChatMessageList = ({
   isBusy,
   messages,
+  onScrollingChange,
   onDraftSuggestion,
   onSendSuggestion,
   scrollParent,
@@ -148,6 +150,8 @@ export const ChatMessageList = ({
   const displayMessages = mergeDisplayMessages(messages);
   const viewportRef = useRef<VirtuosoHandle>(null);
   const previousUserMessageCountRef = useRef(0);
+  const isAtBottomRef = useRef(true);
+  const isScrollingRef = useRef(false);
   const latestMessage = displayMessages.at(-1);
   const latestAssistantMessageIndex = findLastMessageIndexByRole(
     displayMessages,
@@ -184,9 +188,39 @@ export const ChatMessageList = ({
     previousUserMessageCountRef.current = userMessageCount;
   }, [messages.length]);
 
+  useEffect(() => {
+    return () => {
+      if (isScrollingRef.current) {
+        isScrollingRef.current = false;
+        onScrollingChange?.(false);
+      }
+    };
+  }, [onScrollingChange]);
+
+  useEffect(() => {
+    if (!isBusy && isScrollingRef.current) {
+      isScrollingRef.current = false;
+      onScrollingChange?.(false);
+    }
+  }, [isBusy, onScrollingChange]);
+
+  const handleAtBottomStateChange = (isAtBottom: boolean) => {
+    isAtBottomRef.current = isAtBottom;
+  };
+
+  const handleScrollingChange = (isScrolling: boolean) => {
+    if (isScrollingRef.current === isScrolling) {
+      return;
+    }
+
+    isScrollingRef.current = isScrolling;
+    onScrollingChange?.(isBusy ? isScrolling : false);
+  };
+
   return (
     <div className="min-w-0 px-4 sm:px-6 xl:px-8">
       <Virtuoso
+        atBottomStateChange={handleAtBottomStateChange}
         ref={viewportRef}
         className={scrollParent ? "py-6" : "h-full overflow-x-hidden py-6"}
         computeItemKey={(_, message) => message.id}
@@ -213,6 +247,8 @@ export const ChatMessageList = ({
         }}
         customScrollParent={scrollParent ?? undefined}
         data={displayMessages}
+        followOutput={(isAtBottom) => (isAtBottom ? "auto" : false)}
+        isScrolling={handleScrollingChange}
         itemContent={(_, message) => {
           const text = getMessageText(message);
           const imageFiles = getMessageImageFiles(message);
@@ -306,6 +342,15 @@ export const ChatMessageList = ({
               </div>
             </div>
           );
+        }}
+        totalListHeightChanged={() => {
+          if (
+            status === "streaming"
+            && isAtBottomRef.current
+            && !isScrollingRef.current
+          ) {
+            viewportRef.current?.autoscrollToBottom();
+          }
         }}
       />
     </div>

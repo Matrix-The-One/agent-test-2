@@ -8,9 +8,9 @@ import {
   type ChatAgentContextBudget,
   type ChatRequestMode,
 } from "@/store/chat/types";
-import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Textarea";
-import { cn } from "@/utils/cn";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 import { ChatContextGauge } from "./ChatContextGauge";
 
@@ -52,6 +52,7 @@ export const ChatComposer = ({
   textareaRef,
 }: ChatComposerProps) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const statusText = errorMessage ?? helperText;
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== "Enter" || event.nativeEvent.isComposing) {
@@ -140,50 +141,56 @@ export const ChatComposer = ({
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--border)] px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border)] text-[color:var(--foreground)] transition hover:bg-black/4"
+          <Button
+            className="rounded-full border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)] shadow-none hover:bg-black/4"
             onClick={() => imageInputRef.current?.click()}
+            size="icon-lg"
             type="button"
+            variant="outline"
           >
             <Plus className="h-4 w-4" />
-          </button>
-          <button
-            className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--accent-soft)] px-3 py-2 text-sm text-[color:var(--accent-strong)] transition hover:brightness-[0.98]"
-            type="button"
-          >
-            <Sparkles className="h-4 w-4" />
-            进阶
-          </button>
-          <p
-            className={cn(
-              "hidden text-xs md:block",
-              errorMessage ? "text-[color:var(--danger)]" : "text-[color:var(--muted-foreground)]",
-            )}
-          >
-            {errorMessage ?? helperText}
-          </p>
+          </Button>
+          {statusText ? (
+            <p
+              className={cn(
+                "hidden text-xs md:block",
+                errorMessage ? "text-[color:var(--danger)]" : "text-[color:var(--muted-foreground)]",
+              )}
+            >
+              {statusText}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
           <ChatContextGauge budget={contextBudget} isBusy={isBusy} />
 
           {isBusy ? (
-            <Button onClick={onStop} size="icon" type="button" variant="ghost">
+            <Button
+              className="rounded-full border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)] shadow-none hover:bg-black/4"
+              onClick={onStop}
+              size="icon-lg"
+              type="button"
+              variant="outline"
+            >
               <Square className="h-4 w-4 fill-current" />
             </Button>
           ) : (
-            <button
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border)] text-[color:var(--foreground)] transition hover:bg-black/4"
+            <Button
+              className="shrink-0 rounded-full border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)] shadow-none hover:bg-black/4"
               disabled
+              size="icon-lg"
               type="button"
+              variant="outline"
             >
               <Mic className="h-4 w-4" />
-            </button>
+            </Button>
           )}
 
           <Button
+            className="shrink-0 rounded-full"
             disabled={(!draft.trim() && pendingImages.length === 0) || isBusy}
-            size="icon"
+            size="icon-lg"
             type="submit"
           >
             <ArrowUp className="h-4 w-4" />
@@ -191,9 +198,16 @@ export const ChatComposer = ({
         </div>
       </div>
 
-      <div className="px-4 pb-4 text-xs text-[color:var(--muted-foreground)] md:hidden">
-        {errorMessage ?? helperText}
-      </div>
+      {statusText ? (
+        <div
+          className={cn(
+            "px-4 pb-4 text-xs md:hidden",
+            errorMessage ? "text-[color:var(--danger)]" : "text-[color:var(--muted-foreground)]",
+          )}
+        >
+          {statusText}
+        </div>
+      ) : null}
     </form>
   );
 };

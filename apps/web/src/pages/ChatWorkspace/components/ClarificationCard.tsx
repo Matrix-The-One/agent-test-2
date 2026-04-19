@@ -1,6 +1,6 @@
 import { CircleHelp, PencilLine, SendHorizonal } from "lucide-react";
 
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 
 type ClarificationCardProps = {
   isBusy: boolean;

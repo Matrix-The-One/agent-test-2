@@ -27,7 +27,7 @@ export const ChatWorkspacePage = () => {
     : activeModeOption
       ? activeModeOption.helperText
     : workspace.lastAssistantText
-      ? "继续追问当前线程，回答会沿用已有上下文。"
+      ? ""
       : "输入一个需求，直接验证新的工作台布局与流式响应。";
 
   return (
@@ -90,6 +90,7 @@ export const ChatWorkspacePage = () => {
                   <ChatMessageList
                     isBusy={workspace.isBusy}
                     messages={workspace.deferredMessages}
+                    onScrollingChange={workspace.setStreamingRenderPaused}
                     onDraftSuggestion={workspace.handleClarificationDraft}
                     onSendSuggestion={workspace.handleClarificationSuggestion}
                     scrollParent={scrollParent}

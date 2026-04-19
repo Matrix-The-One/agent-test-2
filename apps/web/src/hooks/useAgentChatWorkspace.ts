@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
@@ -32,6 +32,7 @@ import type {
 
 const LOCAL_USER_STORAGE_KEY = "agent:local-user-id";
 const SAVED_CONVERSATIONS_PAGE_SIZE = 20;
+const STREAMING_RENDER_INTERVAL_MS = 80;
 
 const getStoredUserId = () => {
   if (typeof window === "undefined") {
@@ -53,6 +54,66 @@ const flattenConversationPages = (
   pages: ChatConversationListPage[] | undefined,
 ) => pages?.flatMap((page) => page.items) ?? [];
 
+const useStreamingRenderBuffer = (
+  messages: ChatMessage[],
+  status: string,
+  isRenderPaused: boolean,
+) => {
+  const [bufferedMessages, setBufferedMessages] = useState(messages);
+  const latestMessagesRef = useRef(messages);
+  const flushTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    latestMessagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    if (flushTimeoutRef.current != null && (status !== "streaming" || isRenderPaused)) {
+      window.clearTimeout(flushTimeoutRef.current);
+      flushTimeoutRef.current = null;
+    }
+
+    if (status !== "streaming") {
+      startTransition(() => {
+        setBufferedMessages((current) =>
+          current === messages ? current : messages,
+        );
+      });
+      return;
+    }
+
+    if (isRenderPaused) {
+      return;
+    }
+
+    if (flushTimeoutRef.current != null) {
+      return;
+    }
+
+    flushTimeoutRef.current = window.setTimeout(() => {
+      flushTimeoutRef.current = null;
+
+      startTransition(() => {
+        const nextMessages = latestMessagesRef.current;
+
+        setBufferedMessages((current) =>
+          current === nextMessages ? current : nextMessages,
+        );
+      });
+    }, STREAMING_RENDER_INTERVAL_MS);
+  }, [isRenderPaused, messages, status]);
+
+  useEffect(() => {
+    return () => {
+      if (flushTimeoutRef.current != null) {
+        window.clearTimeout(flushTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return bufferedMessages;
+};
+
 export const useAgentChatWorkspace = () => {
   const navigate = useNavigate();
   const params = useParams({ strict: false });
@@ -73,6 +134,7 @@ export const useAgentChatWorkspace = () => {
   const [pendingImages, setPendingImages] = useState<FileUIPart[]>([]);
   const [selectedMode, setSelectedModeState] = useState<ChatRequestMode | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isStreamingRenderPaused, setStreamingRenderPaused] = useState(false);
   const activeConversationIdRef = useRef<string | undefined>(activeConversationId);
   const currentUserRef = useRef<ChatUser | null>(null);
   const draftRef = useRef<HTMLTextAreaElement>(null);
@@ -186,7 +248,11 @@ export const useAgentChatWorkspace = () => {
     });
 
   const currentUser = currentUserQuery.data ?? null;
-  const deferredMessages = useDeferredValue(messages);
+  const deferredMessages = useStreamingRenderBuffer(
+    messages,
+    status,
+    isStreamingRenderPaused,
+  );
   const savedConversations = flattenConversationPages(
     savedConversationsQuery.data?.pages,
   );
@@ -574,6 +640,7 @@ export const useAgentChatWorkspace = () => {
     selectedMode,
     setDraft,
     setSidebarOpen,
+    setStreamingRenderPaused,
     sidebarOpen,
     status,
     stop,

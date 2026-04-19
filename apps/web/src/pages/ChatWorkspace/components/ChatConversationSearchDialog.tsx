@@ -9,7 +9,7 @@ import type {
   ChatConversationListPage,
   ChatConversationRecord,
 } from "@/store/chat/types";
-import { cn } from "@/utils/cn";
+import { cn } from "@/lib/utils";
 
 const SEARCH_PAGE_SIZE = 20;
 

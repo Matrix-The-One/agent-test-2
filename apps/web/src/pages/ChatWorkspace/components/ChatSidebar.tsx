@@ -8,7 +8,7 @@ import type {
   ChatRequestMode,
   ConversationPreview,
 } from "@/store/chat/types";
-import { cn } from "@/utils/cn";
+import { cn } from "@/lib/utils";
 
 import { ChatConversationSearchDialog } from "./ChatConversationSearchDialog";
 

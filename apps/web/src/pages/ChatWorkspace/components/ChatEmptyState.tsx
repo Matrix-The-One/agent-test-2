@@ -5,7 +5,7 @@ import type {
   ChatModeOption,
   StarterPrompt,
 } from "@/store/chat/sidebarData";
-import { cn } from "@/utils/cn";
+import { cn } from "@/lib/utils";
 
 type ChatEmptyStateProps = {
   activeMode: ChatRequestMode | null;
