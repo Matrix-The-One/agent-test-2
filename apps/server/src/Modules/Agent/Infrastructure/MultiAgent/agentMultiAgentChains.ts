@@ -30,6 +30,12 @@ const FIXED_CHAIN_BY_INTENT: Partial<Record<AgentIntent, readonly FixedChainStep
       task: "Produce the main coding solution, implementation notes, or debugging outcome based on the upstream context.",
     },
     {
+      category: "artifact",
+      expectedOutput:
+        "Created file paths and a short note about any generated workspace artifacts.",
+      task: "Create the requested code, text, document, or spreadsheet files when the user explicitly asks for a file artifact.",
+    },
+    {
       category: "quality",
       expectedOutput: "A review of correctness, risks, regressions, and missing validation.",
       task: "Review the current coding solution, identify correctness issues and regression risks, and tighten the output for final delivery.",
@@ -50,6 +56,12 @@ const FIXED_CHAIN_BY_INTENT: Partial<Record<AgentIntent, readonly FixedChainStep
       category: "document",
       expectedOutput: "A polished deliverable structure with clear formatting and sections.",
       task: "Turn the current writing draft into a stronger deliverable form, with explicit structure and formatting guidance where useful.",
+    },
+    {
+      category: "artifact",
+      expectedOutput:
+        "Created file paths and a short note about any generated workspace artifacts.",
+      task: "Create the requested text, markdown, docx, xlsx, or code files when the user explicitly asks for a file artifact.",
     },
   ],
 };

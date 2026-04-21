@@ -28,6 +28,13 @@ const SPECIALIST_METADATA: Record<AgentSkillCategory, SpecialistMetadata> = {
     displayName: "architecture specialist",
     toolName: "architecture_specialist",
   },
+  artifact: {
+    agentName: "artifact_specialist",
+    description:
+      "Use for creating concrete workspace files and delivery artifacts such as txt, md, js, py, docx, and xlsx outputs.",
+    displayName: "artifact specialist",
+    toolName: "artifact_specialist",
+  },
   content: {
     agentName: "content_specialist",
     description:
@@ -55,6 +62,13 @@ const SPECIALIST_METADATA: Record<AgentSkillCategory, SpecialistMetadata> = {
       "Use for code implementation, debugging, API work, and hands-on engineering guidance.",
     displayName: "engineering specialist",
     toolName: "engineering_specialist",
+  },
+  location: {
+    agentName: "location_specialist",
+    description:
+      "Use for map search, geocoding, route planning, nearby POI lookup, district lookup, and other location-oriented tasks.",
+    displayName: "location specialist",
+    toolName: "location_specialist",
   },
   project: {
     agentName: "project_specialist",
@@ -120,6 +134,8 @@ export const buildSpecialistSystemPrompt = ({
     "You are working for the supervisor agent, not directly for the end user.",
     `Your scope is limited to: ${skills.map((skill) => `${skill.name} (${skill.id})`).join(", ")}.`,
     "Use the tools available to you when they materially help.",
+    "If a Docker-backed execution tool is available, use it only for deterministic runtime verification, local workspace inspection, or structured data parsing. Do not treat it as a general shell.",
+    "If file creation tools are available, use them only when the user explicitly asks for a file artifact or when creating a file is the clearest way to satisfy the request. Include the created path in your notes.",
     "Return concise, high-signal notes or draft fragments that the supervisor can directly synthesize.",
     "Do not mention internal agent orchestration unless explicitly asked.",
   ].join("\n");

@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { resolve } from "node:path";
 
 import type { Env } from "./env.js";
 
@@ -58,10 +59,72 @@ export class AppConfigService {
     );
   }
 
+  get amapMapsApiKey() {
+    return this.configService.get("AMAP_MAPS_API_KEY", { infer: true }) ?? undefined;
+  }
+
+  get amapMapsMcpEnabled() {
+    return this.configService.get("AGENT_MCP_AMAP_ENABLED", { infer: true });
+  }
+
+  get amapMapsMcpBaseUrl() {
+    return this.configService.get("AGENT_MCP_AMAP_BASE_URL", { infer: true });
+  }
+
+  get amapMapsMcpTimeoutMs() {
+    return this.configService.get("AGENT_MCP_AMAP_TIMEOUT_MS", { infer: true });
+  }
+
+  get amapMapsMcpConfigured() {
+    return this.amapMapsMcpEnabled && Boolean(this.amapMapsApiKey);
+  }
+
   get openAiModel() {
     const model = this.configService.get("OPENAI_MODEL", { infer: true });
 
     return this.normalizeModelName(model);
+  }
+
+  get dockerEnabled() {
+    return this.configService.get("DOCKER_ENABLED", { infer: true });
+  }
+
+  get dockerBin() {
+    return this.configService.get("DOCKER_BIN", { infer: true });
+  }
+
+  get agentDockerJavaScriptImage() {
+    return this.configService.get("AGENT_DOCKER_JS_IMAGE", { infer: true });
+  }
+
+  get agentDockerPythonImage() {
+    return this.configService.get("AGENT_DOCKER_PY_IMAGE", { infer: true });
+  }
+
+  get agentDockerTimeoutMs() {
+    return this.configService.get("AGENT_DOCKER_TIMEOUT_MS", { infer: true });
+  }
+
+  get agentDockerMaxOutputChars() {
+    return this.configService.get("AGENT_DOCKER_MAX_OUTPUT_CHARS", {
+      infer: true,
+    });
+  }
+
+  get agentDockerWorkspaceRoot() {
+    const configuredRoot = this.configService.get("AGENT_DOCKER_WORKSPACE_ROOT", {
+      infer: true,
+    });
+
+    return resolve(configuredRoot ?? resolve(process.cwd(), "..", ".."));
+  }
+
+  get agentFileOutputRoot() {
+    const configuredRoot = this.configService.get("AGENT_FILE_OUTPUT_ROOT", {
+      infer: true,
+    });
+
+    return resolve(configuredRoot ?? this.agentDockerWorkspaceRoot);
   }
 
   get agentIntentModel() {
@@ -82,6 +145,12 @@ export class AppConfigService {
     );
   }
 
+  get agentLocationModel() {
+    return this.normalizeModelName(
+      this.getOptionalModel("AGENT_LOCATION_MODEL") ?? this.agentProjectModel,
+    );
+  }
+
   get agentContentModel() {
     return this.normalizeModelName(
       this.getOptionalModel("AGENT_CONTENT_MODEL") ?? "gpt-5.4",
@@ -91,6 +160,12 @@ export class AppConfigService {
   get agentDocumentModel() {
     return this.normalizeModelName(
       this.getOptionalModel("AGENT_DOCUMENT_MODEL") ?? this.agentContentModel,
+    );
+  }
+
+  get agentArtifactModel() {
+    return this.normalizeModelName(
+      this.getOptionalModel("AGENT_ARTIFACT_MODEL") ?? this.agentEngineeringModel,
     );
   }
 
@@ -122,6 +197,10 @@ export class AppConfigService {
     return Boolean(this.openAiApiKey);
   }
 
+  get dockerConfigured() {
+    return this.dockerEnabled;
+  }
+
   get tokenCountProviderConfigured() {
     return Boolean(this.openAiTokenCountApiKey);
   }
@@ -131,8 +210,10 @@ export class AppConfigService {
       | "AGENT_INTENT_MODEL"
       | "AGENT_SUPERVISOR_MODEL"
       | "AGENT_PROJECT_MODEL"
+      | "AGENT_LOCATION_MODEL"
       | "AGENT_CONTENT_MODEL"
       | "AGENT_DOCUMENT_MODEL"
+      | "AGENT_ARTIFACT_MODEL"
       | "AGENT_ENGINEERING_MODEL"
       | "AGENT_ARCHITECTURE_MODEL"
       | "AGENT_DELIVERY_MODEL"

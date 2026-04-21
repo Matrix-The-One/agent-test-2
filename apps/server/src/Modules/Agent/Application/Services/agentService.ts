@@ -8,13 +8,17 @@ import {
   type MessageContent,
 } from "@langchain/core/messages";
 import { toUIMessageStream } from "@ai-sdk/langchain";
-import { createUIMessageStream } from "ai";
+import { createUIMessageStream, type UIMessageStreamWriter } from "ai";
 import { Inject, Injectable, ServiceUnavailableException } from "@nestjs/common";
 
 import { AppConfigService } from "../../../../Config/appConfigService.js";
 import { ConversationService } from "../../../Conversations/Application/Services/conversationService.js";
 import type { ConversationMessageRecord } from "../../../Conversations/Domain/conversationTypes.js";
 import { AgentSkillsService } from "../../../SkillCatalog/Application/Services/agentSkillsService.js";
+import {
+  isAbortError,
+  throwIfAborted,
+} from "../../Domain/agentAbort.js";
 import type { AgentChatRequest } from "../../Domain/agentSchemas.js";
 import type {
   AgentContextBudget,
@@ -30,13 +34,7 @@ import type { AgentWorkflowState } from "../../Infrastructure/LangGraph/agentWor
 
 const AGENT_TRACE_PART_ID = "agent-trace";
 
-type AgentTraceWriter = {
-  write: (chunk: {
-    data: AgentExecutionTrace;
-    id: string;
-    type: "data-agentTrace";
-  }) => void;
-};
+type AgentTraceWriter = UIMessageStreamWriter;
 
 type AgentTraceStore = {
   emit: () => void;
@@ -83,80 +81,88 @@ export class AgentService {
   @Inject(AgentContextWindowService)
   private readonly contextWindowService!: AgentContextWindowService;
 
-  async streamReply(payload: AgentChatRequest) {
+  streamReply(payload: AgentChatRequest, signal?: AbortSignal) {
     const threadId = payload.threadId ?? randomUUID();
     const requestStartedAtMs = Date.now();
-    const runtimeUser = await this.conversationService.prepareConversationTurn({
-      conversationId: threadId,
-      images: payload.images,
-      message: payload.message,
-      selectedMode: payload.mode,
-      userId: payload.userId,
-    });
-    const workflow = await this.agentWorkflowGraphFactory.createGraph().invoke({
-      images: payload.images,
-      message: payload.message,
-      requestedMode: payload.mode,
-      threadId,
-    });
-    const routingResolvedAtMs = Date.now();
-    const selectedSkills = this.agentSkillsService.getSkillsByIds(
-      workflow.skillSelection.skillIds,
-    );
-    const preparedConversationContext =
-      await this.contextWindowService.prepareConversationContext({
-        conversationId: threadId,
-        intent: workflow.intent,
-        specialistCategories: Array.from(
-          new Set(selectedSkills.map((skill) => skill.category)),
-        ),
-        userId: runtimeUser.id,
-      });
-
-    if (workflow.intent === "image") {
-      const trace = this.buildAgentTrace({
-        contextBudget: preparedConversationContext.budget,
-        executionPlan: this.createImagePlaceholderExecutionPlan({
-          completedAtMs: routingResolvedAtMs,
-          startedAtMs: requestStartedAtMs,
-        }),
-        requestedMode: payload.mode,
-        requestStartedAtMs,
-        routingDurationMs: routingResolvedAtMs - requestStartedAtMs,
-        threadId,
-        workflow,
-      });
-      const persistAssistantReply = async (responseMessage: AssistantStreamMessage) => {
-        const persistedAssistantPayload = this.extractAssistantPayload(
-          responseMessage,
-          trace,
-        );
-
-        await this.conversationService.saveAssistantReply({
-          content: persistedAssistantPayload.text,
-          conversationId: threadId,
-          metadata: persistedAssistantPayload.metadata,
-          mode: persistedAssistantPayload.trace?.intent ?? workflow.intent,
-          trace: persistedAssistantPayload.trace,
-          userId: runtimeUser.id,
-        });
-      };
-
-      return this.createTextStream(
-        `已识别为 image 意图, 当前图片输入角色为 ${workflow.imageRole}。服务端已经支持图片路由, 但还没有接入图片生成或改图模型。`,
-        {
-          onFinish: persistAssistantReply,
-          trace,
-        },
-      );
-    }
-
-    this.assertProviderConfigured();
-
+    let runtimeUserId: string | undefined;
     let traceStore: AgentTraceStore | undefined;
+    let persistedTrace: AgentExecutionTrace | undefined;
+    let workflow: AgentWorkflowState | undefined;
 
     return createUIMessageStream({
       execute: async ({ writer }) => {
+        throwIfAborted(signal);
+
+        const runtimeUser = await this.conversationService.prepareConversationTurn({
+          conversationId: threadId,
+          images: payload.images,
+          message: payload.message,
+          selectedMode: payload.mode,
+          userId: payload.userId,
+        });
+
+        runtimeUserId = runtimeUser.id;
+
+        throwIfAborted(signal);
+
+        workflow = await this.agentWorkflowGraphFactory.createGraph().invoke(
+          {
+            images: payload.images,
+            message: payload.message,
+            requestedMode: payload.mode,
+            threadId,
+          },
+          { signal },
+        );
+
+        const routingResolvedAtMs = Date.now();
+
+        throwIfAborted(signal);
+
+        const selectedSkills = await this.agentSkillsService.getSkillsByIds(
+          workflow.skillSelection.skillIds,
+        );
+
+        throwIfAborted(signal);
+
+        const preparedConversationContext =
+          await this.contextWindowService.prepareConversationContext({
+            conversationId: threadId,
+            intent: workflow.intent,
+            signal,
+            specialistCategories: Array.from(
+              new Set(selectedSkills.map((skill) => skill.category)),
+            ),
+            userId: runtimeUser.id,
+          });
+
+        throwIfAborted(signal);
+
+        if (workflow.intent === "image") {
+          persistedTrace = this.buildAgentTrace({
+            contextBudget: preparedConversationContext.budget,
+            executionPlan: this.createImagePlaceholderExecutionPlan({
+              completedAtMs: routingResolvedAtMs,
+              startedAtMs: requestStartedAtMs,
+            }),
+            requestedMode: payload.mode,
+            requestStartedAtMs,
+            routingDurationMs: routingResolvedAtMs - requestStartedAtMs,
+            threadId,
+            workflow,
+          });
+
+          this.writeTextStreamToWriter(
+            writer,
+            `已识别为 image 意图, 当前图片输入角色为 ${workflow.imageRole}。服务端已经支持图片路由, 但还没有接入图片生成或改图模型。`,
+            persistedTrace,
+          );
+
+          return;
+        }
+
+        this.assertProviderConfigured();
+
         const executionContext = {
           hasImages: workflow.hasImages,
           imageRole: workflow.imageRole,
@@ -184,6 +190,7 @@ export class AgentService {
           workflow,
         });
 
+        persistedTrace = trace;
         traceStore = this.createTraceStore(trace, writer);
         const activeTraceStore = traceStore;
 
@@ -207,6 +214,8 @@ export class AgentService {
         let stream: Awaited<ReturnType<typeof graph.stream>>;
 
         try {
+          throwIfAborted(signal);
+
           stream = await graph.stream(
             {
               messages: this.buildPersistedConversationMessages(
@@ -221,6 +230,7 @@ export class AgentService {
             },
             {
               configurable: { thread_id: `${threadId}::supervisor` },
+              signal,
               streamMode: ["values", "messages"],
             },
           );
@@ -252,10 +262,18 @@ export class AgentService {
         );
       },
       onFinish: async ({ responseMessage }) => {
+        if (!runtimeUserId || !workflow) {
+          return;
+        }
+
         const persistedAssistantPayload = this.extractAssistantPayload(
           responseMessage as AssistantStreamMessage,
-          traceStore?.snapshot(),
+          traceStore?.snapshot() ?? persistedTrace,
         );
+
+        if (signal?.aborted && !persistedAssistantPayload.text) {
+          return;
+        }
 
         await this.conversationService.saveAssistantReply({
           content: persistedAssistantPayload.text,
@@ -263,7 +281,7 @@ export class AgentService {
           metadata: persistedAssistantPayload.metadata,
           mode: persistedAssistantPayload.trace?.intent ?? workflow.intent,
           trace: persistedAssistantPayload.trace,
-          userId: runtimeUser.id,
+          userId: runtimeUserId,
         });
       },
       onError: (error) => this.normalizeError(error),
@@ -271,6 +289,10 @@ export class AgentService {
   }
 
   normalizeError(error: unknown) {
+    if (isAbortError(error)) {
+      return "Request aborted.";
+    }
+
     if (error instanceof Error) {
       return error.message;
     }
@@ -382,43 +404,32 @@ export class AgentService {
     );
   }
 
-  private createTextStream(
+  private writeTextStreamToWriter(
+    writer: AgentTraceWriter,
     text: string,
-    options?: {
-      onFinish?: (responseMessage: AssistantStreamMessage) => Promise<void> | void;
-      trace?: AgentExecutionTrace;
-    },
+    trace?: AgentExecutionTrace,
   ) {
     const textId = randomUUID();
+    writer.write({ type: "start" });
 
-    return createUIMessageStream({
-      execute: ({ writer }) => {
-        writer.write({ type: "start" });
+    if (trace) {
+      this.writeTrace(writer, trace);
+    }
 
-        if (options?.trace) {
-          this.writeTrace(writer, options.trace);
-        }
+    writer.write({ id: textId, type: "text-start" });
 
-        writer.write({ id: textId, type: "text-start" });
+    for (const chunk of this.chunkText(text)) {
+      writer.write({
+        delta: chunk,
+        id: textId,
+        type: "text-delta",
+      });
+    }
 
-        for (const chunk of this.chunkText(text)) {
-          writer.write({
-            delta: chunk,
-            id: textId,
-            type: "text-delta",
-          });
-        }
-
-        writer.write({ id: textId, type: "text-end" });
-        writer.write({
-          finishReason: "stop",
-          type: "finish",
-        });
-      },
-      onFinish: async ({ responseMessage }) => {
-        await options?.onFinish?.(responseMessage as AssistantStreamMessage);
-      },
-      onError: (error) => this.normalizeError(error),
+    writer.write({ id: textId, type: "text-end" });
+    writer.write({
+      finishReason: "stop",
+      type: "finish",
     });
   }
 

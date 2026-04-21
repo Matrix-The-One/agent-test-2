@@ -3,12 +3,13 @@ import {
   type BaseMessage,
   type MessageContent,
 } from "@langchain/core/messages";
-import { tool } from "@langchain/core/tools";
+import { tool, type ToolRuntime } from "@langchain/core/tools";
 import { MemorySaver } from "@langchain/langgraph";
 import { Inject, Injectable } from "@nestjs/common";
 import { createAgent } from "langchain";
 import { z } from "zod";
 
+import { throwIfAborted } from "../../Domain/agentAbort.js";
 import type {
   AgentExecutionPlan,
   AgentExecutionContext,
@@ -259,15 +260,19 @@ const runSpecialist = async ({
   executionContext,
   expectedOutput,
   runtime,
+  signal,
   task,
   upstreamResults,
 }: {
   executionContext: AgentExecutionContext;
   expectedOutput?: string;
   runtime: SpecialistRuntime;
+  signal?: AbortSignal;
   task: string;
   upstreamResults?: readonly SpecialistRunResult[];
 }) => {
+  throwIfAborted(signal);
+
   const result = await runtime.agent.invoke(
     {
       messages: [
@@ -289,6 +294,7 @@ const runSpecialist = async ({
           runtime.category,
         ),
       },
+      signal,
     },
   );
 
@@ -319,7 +325,7 @@ const createDynamicSupervisorGraph = ({
       async ({
         expectedOutput,
         task,
-      }: z.infer<typeof specialistTaskSchema>) => {
+      }: z.infer<typeof specialistTaskSchema>, runtimeConfig: ToolRuntime) => {
         const traceStep: AgentTraceStep = {
           category: runtime.category,
           expectedOutput,
@@ -337,6 +343,7 @@ const createDynamicSupervisorGraph = ({
           executionContext,
           expectedOutput,
           runtime,
+          signal: runtimeConfig.signal,
           task,
         });
 
@@ -416,6 +423,7 @@ const createFixedChainGraph = ({
         executionContext,
         expectedOutput: step.expectedOutput,
         runtime,
+        signal: options?.signal,
         task: step.task,
         upstreamResults: specialistResults,
       });

@@ -1,16 +1,26 @@
-import { ChevronDown, Menu, Sparkles } from "lucide-react";
+import {
+  ChevronDown,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Sparkles,
+} from "lucide-react";
 
 import type { HealthState } from "@/store/chat/types";
 
 type ChatTopBarProps = {
   health: HealthState | null;
+  isSidebarCollapsed: boolean;
   onToggleSidebar: () => void;
+  onToggleSidebarCollapsed: () => void;
   status: string;
 };
 
 export const ChatTopBar = ({
   health,
+  isSidebarCollapsed,
   onToggleSidebar,
+  onToggleSidebarCollapsed,
   status,
 }: ChatTopBarProps) => {
   return (
@@ -22,6 +32,18 @@ export const ChatTopBar = ({
           type="button"
         >
           <Menu className="h-4 w-4" />
+        </button>
+        <button
+          aria-label={isSidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
+          className="hidden h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)] shadow-[var(--shadow-soft)] transition hover:bg-black/4 lg:inline-flex"
+          onClick={onToggleSidebarCollapsed}
+          type="button"
+        >
+          {isSidebarCollapsed ? (
+            <PanelLeftOpen className="h-4 w-4" />
+          ) : (
+            <PanelLeftClose className="h-4 w-4" />
+          )}
         </button>
 
         <button className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 text-sm font-medium text-[color:var(--foreground)] shadow-[var(--shadow-soft)]">

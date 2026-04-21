@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { AppConfigService } from "../../../../Config/appConfigService.js";
 import { AgentModelFactory } from "../../Infrastructure/Factories/agentModelFactory.js";
+import { isAbortError } from "../../Domain/agentAbort.js";
 import type {
   AgentImageRole,
   AgentIntentDecision,
@@ -163,11 +164,13 @@ export class AgentIntentService {
     imageRole,
     message,
     requestedMode,
+    signal,
   }: {
     hasImages: boolean;
     imageRole: AgentImageRole;
     message: string;
     requestedMode?: AgentRequestMode;
+    signal?: AbortSignal;
   }): Promise<AgentIntentDecision> {
     if (requestedMode) {
       return {
@@ -198,7 +201,14 @@ export class AgentIntentService {
       hasImages,
       imageRole,
       message,
-    }).catch(() => null);
+      signal,
+    }).catch((error: unknown) => {
+      if (isAbortError(error)) {
+        throw error;
+      }
+
+      return null;
+    });
 
     if (modelDecision) {
       return modelDecision;
@@ -326,10 +336,12 @@ export class AgentIntentService {
     hasImages,
     imageRole,
     message,
+    signal,
   }: {
     hasImages: boolean;
     imageRole: AgentImageRole;
     message: string;
+    signal?: AbortSignal;
   }): Promise<AgentIntentDecision> {
     const structuredModel = this.modelFactory
       .createIntentModel()
@@ -337,7 +349,9 @@ export class AgentIntentService {
     const result = await structuredModel.invoke([
       new SystemMessage(INTENT_ROUTER_SYSTEM_PROMPT),
       new HumanMessage(this.buildIntentRouterInput({ hasImages, imageRole, message })),
-    ]);
+    ], {
+      signal,
+    });
 
     return {
       intent: result.intent,

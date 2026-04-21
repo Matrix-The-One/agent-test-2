@@ -6,6 +6,10 @@ import {
 } from "js-tiktoken";
 
 import { AppConfigService } from "../../../../Config/appConfigService.js";
+import {
+  isAbortError,
+  throwIfAborted,
+} from "../../Domain/agentAbort.js";
 import type {
   AgentImageInput,
   AgentTokenCountingMode,
@@ -33,7 +37,10 @@ export class AgentTokenCountService {
   async countConversationInputTokens(input: {
     messages: readonly ContextTokenMessage[];
     model: string;
+    signal?: AbortSignal;
   }) {
+    throwIfAborted(input.signal);
+
     const estimatedTokens = this.estimateTokens(input.messages);
     const tokenizerTokens = this.countWithTokenizer(input);
     const fallbackResult =
@@ -56,6 +63,8 @@ export class AgentTokenCountService {
     }
 
     try {
+      throwIfAborted(input.signal);
+
       const response = await fetch(this.buildCountEndpointUrl(), {
         body: JSON.stringify({
           input: input.messages.map((message) => ({
@@ -69,6 +78,7 @@ export class AgentTokenCountService {
           "Content-Type": "application/json",
         },
         method: "POST",
+        signal: input.signal,
       });
 
       if (this.isUnsupportedEndpointResponse(response.status)) {
@@ -94,7 +104,11 @@ export class AgentTokenCountService {
         countingMode: "exact" as AgentTokenCountingMode,
         inputTokens: payload.input_tokens,
       };
-    } catch {
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw error;
+      }
+
       return fallbackResult;
     }
   }

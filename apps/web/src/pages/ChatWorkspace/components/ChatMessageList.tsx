@@ -1,11 +1,21 @@
-import { memo, useEffect, useRef, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { ArrowDown } from "lucide-react";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
-import { Virtuoso, type ItemProps, type VirtuosoHandle } from "react-virtuoso";
 import { Streamdown, type PluginConfig } from "streamdown";
 
+import { Button } from "@/components/ui/button";
 import {
   getAgentTrace,
   getClarificationMetadata,
@@ -22,6 +32,11 @@ import {
 } from "@/store/chat/types";
 
 import { ClarificationCard } from "./ClarificationCard";
+
+const AUTO_SCROLL_BOTTOM_THRESHOLD_PX = 80;
+const PROGRAMMATIC_SCROLL_RESET_MS = 120;
+const PROGRAMMATIC_SMOOTH_SCROLL_RESET_MS = 420;
+const USER_SCROLL_IDLE_MS = 140;
 
 const streamdownPlugins: PluginConfig = {
   cjk,
@@ -51,6 +66,11 @@ const traceStepStatusClassNames: Record<ChatAgentTraceStepStatus, string> = {
     "border-slate-200/80 bg-slate-100/90 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300",
   running:
     "border-amber-200/80 bg-amber-50/90 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200",
+};
+
+type DisplayMessageItem = {
+  key: string;
+  message: ChatMessage;
 };
 
 const formatDuration = (durationMs: number | undefined) => {
@@ -134,7 +154,6 @@ type ChatMessageListProps = {
   onScrollingChange?: (isScrolling: boolean) => void;
   onDraftSuggestion: (suggestion: string) => void;
   onSendSuggestion: (suggestion: string) => Promise<void>;
-  scrollParent?: HTMLElement | null;
   status: string;
 };
 
@@ -144,23 +163,81 @@ export const ChatMessageList = ({
   onScrollingChange,
   onDraftSuggestion,
   onSendSuggestion,
-  scrollParent,
   status,
 }: ChatMessageListProps) => {
-  const displayMessages = mergeDisplayMessages(messages);
-  const viewportRef = useRef<VirtuosoHandle>(null);
+  const displayMessages = useMemo(() => mergeDisplayMessages(messages), [messages]);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const previousUserMessageCountRef = useRef(0);
   const isAtBottomRef = useRef(true);
   const isScrollingRef = useRef(false);
-  const latestMessage = displayMessages.at(-1);
+  const isProgrammaticScrollRef = useRef(false);
+  const scrollEndTimeoutRef = useRef<number | null>(null);
+  const programmaticScrollTimeoutRef = useRef<number | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const latestMessage = displayMessages.at(-1)?.message;
   const latestAssistantMessageIndex = findLastMessageIndexByRole(
     displayMessages,
     "assistant",
   );
-  const activeStreamingAssistantId = status === "streaming" && latestAssistantMessageIndex >= 0
-    ? displayMessages[latestAssistantMessageIndex]?.id
+  const activeStreamingAssistantKey = status === "streaming" && latestAssistantMessageIndex >= 0
+    ? displayMessages[latestAssistantMessageIndex]?.key
     : null;
   const showPendingAssistantFooter = isBusy && latestMessage?.role === "user";
+  const showScrollToLatest = !isAtBottom && displayMessages.length > 0;
+
+  const syncBottomState = useCallback(() => {
+    const viewport = viewportRef.current;
+
+    if (!viewport) {
+      return false;
+    }
+
+    const distanceFromBottom =
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const nextIsAtBottom = distanceFromBottom <= AUTO_SCROLL_BOTTOM_THRESHOLD_PX;
+
+    isAtBottomRef.current = nextIsAtBottom;
+    setIsAtBottom((current) =>
+      current === nextIsAtBottom ? current : nextIsAtBottom,
+    );
+
+    return nextIsAtBottom;
+  }, []);
+
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = "auto") => {
+      const viewport = viewportRef.current;
+
+      if (!viewport) {
+        return;
+      }
+
+      isProgrammaticScrollRef.current = true;
+      isAtBottomRef.current = true;
+      setIsAtBottom(true);
+      viewport.scrollTo({
+        behavior,
+        top: viewport.scrollHeight,
+      });
+
+      if (programmaticScrollTimeoutRef.current != null) {
+        window.clearTimeout(programmaticScrollTimeoutRef.current);
+      }
+
+      programmaticScrollTimeoutRef.current = window.setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+        syncBottomState();
+      }, behavior === "smooth"
+        ? PROGRAMMATIC_SMOOTH_SCROLL_RESET_MS
+        : PROGRAMMATIC_SCROLL_RESET_MS);
+    },
+    [syncBottomState],
+  );
+
+  useLayoutEffect(() => {
+    syncBottomState();
+  }, [displayMessages.length, syncBottomState]);
 
   useEffect(() => {
     const userMessageCount = messages.filter((message) => message.role === "user").length;
@@ -170,26 +247,51 @@ export const ChatMessageList = ({
       return;
     }
 
-    const latestUserMessageIndex = [...messages]
-      .map((message) => message.role)
-      .lastIndexOf("user");
+    const behavior =
+      previousUserMessageCountRef.current === 0 ? "auto" : "smooth";
 
-    if (latestUserMessageIndex < 0) {
-      previousUserMessageCountRef.current = userMessageCount;
+    scrollToBottom(behavior);
+    previousUserMessageCountRef.current = userMessageCount;
+  }, [messages, scrollToBottom]);
+
+  useLayoutEffect(() => {
+    if (!isAtBottomRef.current) {
       return;
     }
 
-    viewportRef.current?.scrollToIndex({
-      align: "start",
-      behavior: "smooth",
-      index: latestUserMessageIndex,
+    scrollToBottom("auto");
+  }, [displayMessages, scrollToBottom, status]);
+
+  useEffect(() => {
+    const content = contentRef.current;
+
+    if (!content || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      if (isAtBottomRef.current) {
+        scrollToBottom("auto");
+      }
     });
 
-    previousUserMessageCountRef.current = userMessageCount;
-  }, [messages.length]);
+    observer.observe(content);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [scrollToBottom]);
 
   useEffect(() => {
     return () => {
+      if (scrollEndTimeoutRef.current != null) {
+        window.clearTimeout(scrollEndTimeoutRef.current);
+      }
+
+      if (programmaticScrollTimeoutRef.current != null) {
+        window.clearTimeout(programmaticScrollTimeoutRef.current);
+      }
+
       if (isScrollingRef.current) {
         isScrollingRef.current = false;
         onScrollingChange?.(false);
@@ -204,155 +306,158 @@ export const ChatMessageList = ({
     }
   }, [isBusy, onScrollingChange]);
 
-  const handleAtBottomStateChange = (isAtBottom: boolean) => {
-    isAtBottomRef.current = isAtBottom;
-  };
+  const handleScroll = () => {
+    syncBottomState();
 
-  const handleScrollingChange = (isScrolling: boolean) => {
-    if (isScrollingRef.current === isScrolling) {
+    if (isProgrammaticScrollRef.current || !isBusy) {
       return;
     }
 
-    isScrollingRef.current = isScrolling;
-    onScrollingChange?.(isBusy ? isScrolling : false);
+    if (!isScrollingRef.current) {
+      isScrollingRef.current = true;
+      onScrollingChange?.(true);
+    }
+
+    if (scrollEndTimeoutRef.current != null) {
+      window.clearTimeout(scrollEndTimeoutRef.current);
+    }
+
+    scrollEndTimeoutRef.current = window.setTimeout(() => {
+      isScrollingRef.current = false;
+      onScrollingChange?.(false);
+      scrollEndTimeoutRef.current = null;
+    }, USER_SCROLL_IDLE_MS);
   };
 
   return (
-    <div className="min-w-0 px-4 sm:px-6 xl:px-8">
-      <Virtuoso
-        atBottomStateChange={handleAtBottomStateChange}
+    <div className="relative min-h-0 flex-1">
+      <div
         ref={viewportRef}
-        className={scrollParent ? "py-6" : "h-full overflow-x-hidden py-6"}
-        computeItemKey={(_, message) => message.id}
-        components={{
-          Footer: () => (
-            <>
-              {showPendingAssistantFooter ? (
-                <div className="w-full py-4">
+        className="h-full overflow-y-auto px-4 sm:px-6 xl:px-8"
+        onScroll={handleScroll}
+        style={{ scrollbarGutter: "stable" }}
+      >
+        <div ref={contentRef} className="py-6">
+          {displayMessages.map(({ key, message }) => {
+            const text = getMessageText(message);
+            const imageFiles = getMessageImageFiles(message);
+            const clarification = getClarificationMetadata(message);
+            const agentTrace = getAgentTrace(message);
+            const isPendingAssistantMessage = message.role === "assistant"
+              && !text
+              && !clarification
+              && !agentTrace
+              && imageFiles.length === 0
+              && (status === "submitted" || status === "streaming");
+            const isActiveStreamingMessage = key === activeStreamingAssistantKey;
+
+            if (
+              !text
+              && !clarification
+              && !agentTrace
+              && imageFiles.length === 0
+              && !isPendingAssistantMessage
+            ) {
+              return null;
+            }
+
+            if (message.role === "user") {
+              return (
+                <div key={key} className="w-full py-4">
                   <div className={trackClassName}>
-                    <AssistantMessageShell>
-                      <AssistantLoadingIndicator />
-                    </AssistantMessageShell>
-                  </div>
-                </div>
-              ) : null}
-              <div className="h-8" />
-            </>
-          ),
-          Item: ({ children, style, ...props }: ItemProps<ChatMessage>) => (
-            <div {...props} className="w-full" style={style}>
-              {children}
-            </div>
-          ),
-        }}
-        customScrollParent={scrollParent ?? undefined}
-        data={displayMessages}
-        followOutput={(isAtBottom) => (isAtBottom ? "auto" : false)}
-        isScrolling={handleScrollingChange}
-        itemContent={(_, message) => {
-          const text = getMessageText(message);
-          const imageFiles = getMessageImageFiles(message);
-          const clarification = getClarificationMetadata(message);
-          const agentTrace = getAgentTrace(message);
-          const isPendingAssistantMessage = message.role === "assistant"
-            && !text
-            && !clarification
-            && !agentTrace
-            && imageFiles.length === 0
-            && (status === "submitted" || status === "streaming");
-          const isActiveStreamingMessage = message.id === activeStreamingAssistantId;
-
-          if (
-            !text
-            && !clarification
-            && !agentTrace
-            && imageFiles.length === 0
-            && !isPendingAssistantMessage
-          ) {
-            return <div className="hidden" />;
-          }
-
-          if (message.role === "user") {
-            return (
-              <div className="w-full py-4">
-                <div className={trackClassName}>
-                  <div className="flex w-full justify-end">
-                    <div className="max-w-[85%] sm:max-w-[72%] xl:max-w-3xl">
-                      <div className="max-w-full rounded-[26px] bg-[color:var(--user-bubble)] px-5 py-4 text-sm leading-7 text-[color:var(--foreground)] shadow-[var(--shadow-soft)]">
-                        {imageFiles.length > 0 ? (
-                          <div className="mb-3 flex flex-wrap justify-end gap-3">
-                            {imageFiles.map((file, index) => (
-                              <img
-                                key={`${file.url}-${index}`}
-                                alt={file.filename ?? `upload-${index + 1}`}
-                                className="h-28 w-28 rounded-2xl border border-white/40 object-cover"
-                                src={file.url}
-                              />
-                            ))}
-                          </div>
-                        ) : null}
-                        {text ? <div>{text}</div> : null}
+                    <div className="flex w-full justify-end">
+                      <div className="max-w-[85%] sm:max-w-[72%] xl:max-w-3xl">
+                        <div className="max-w-full rounded-[26px] bg-[color:var(--user-bubble)] px-5 py-4 text-sm leading-7 text-[color:var(--foreground)] shadow-[var(--shadow-soft)]">
+                          {imageFiles.length > 0 ? (
+                            <div className="mb-3 flex flex-wrap justify-end gap-3">
+                              {imageFiles.map((file, index) => (
+                                <img
+                                  key={`${file.url}-${index}`}
+                                  alt={file.filename ?? `upload-${index + 1}`}
+                                  className="h-28 w-28 rounded-2xl border border-white/40 object-cover"
+                                  src={file.url}
+                                />
+                              ))}
+                            </div>
+                          ) : null}
+                          {text ? <div>{text}</div> : null}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
+              );
+            }
+
+            return (
+              <div key={key} className="w-full py-4">
+                <div className={trackClassName}>
+                  <AssistantMessageShell>
+                    <div className="min-w-0">
+                      {clarification ? (
+                        <ClarificationCard
+                          isBusy={isBusy}
+                          onDraft={onDraftSuggestion}
+                          onSend={onSendSuggestion}
+                          question={text || "还需要你补充一点关键信息。"}
+                          suggestions={clarification.suggestions ?? []}
+                          title={clarification.title ?? "还需要确认一下"}
+                        />
+                      ) : isPendingAssistantMessage ? (
+                        <AssistantLoadingIndicator />
+                      ) : (
+                        <>
+                          {text ? (
+                            <AssistantMarkdown
+                              isAnimating={isActiveStreamingMessage}
+                              text={text}
+                            />
+                          ) : null}
+                          {agentTrace ? (
+                            <AgentTracePanel
+                              isStreaming={isActiveStreamingMessage}
+                              trace={agentTrace}
+                            />
+                          ) : null}
+                          {!text && agentTrace && isActiveStreamingMessage ? (
+                            <div className="mt-4">
+                              <AssistantLoadingIndicator />
+                            </div>
+                          ) : null}
+                        </>
+                      )}
+                    </div>
+                  </AssistantMessageShell>
+                </div>
               </div>
             );
-          }
+          })}
 
-          return (
+          {showPendingAssistantFooter ? (
             <div className="w-full py-4">
               <div className={trackClassName}>
                 <AssistantMessageShell>
-                  <div className="min-w-0">
-                    {clarification ? (
-                      <ClarificationCard
-                        isBusy={isBusy}
-                        onDraft={onDraftSuggestion}
-                        onSend={onSendSuggestion}
-                        question={text || "还需要你补充一点关键信息。"}
-                        suggestions={clarification.suggestions ?? []}
-                        title={clarification.title ?? "还需要确认一下"}
-                      />
-                    ) : isPendingAssistantMessage ? (
-                      <AssistantLoadingIndicator />
-                    ) : (
-                      <>
-                        {text ? (
-                          <AssistantMarkdown
-                            isAnimating={isActiveStreamingMessage}
-                            text={text}
-                          />
-                        ) : null}
-                        {agentTrace ? (
-                          <AgentTracePanel
-                            isStreaming={isActiveStreamingMessage}
-                            trace={agentTrace}
-                          />
-                        ) : null}
-                        {!text && agentTrace && isActiveStreamingMessage ? (
-                          <div className="mt-4">
-                            <AssistantLoadingIndicator />
-                          </div>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
+                  <AssistantLoadingIndicator />
                 </AssistantMessageShell>
               </div>
             </div>
-          );
-        }}
-        totalListHeightChanged={() => {
-          if (
-            status === "streaming"
-            && isAtBottomRef.current
-            && !isScrollingRef.current
-          ) {
-            viewportRef.current?.autoscrollToBottom();
-          }
-        }}
-      />
+          ) : null}
+
+          <div className="h-8" />
+        </div>
+      </div>
+
+      {showScrollToLatest ? (
+        <Button
+          aria-label="滚动到最新消息"
+          className="absolute bottom-4 right-4 rounded-full shadow-[var(--shadow-panel)]"
+          onClick={() => scrollToBottom("smooth")}
+          size="icon-lg"
+          type="button"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </Button>
+      ) : null}
     </div>
   );
 };
@@ -548,11 +653,11 @@ const AssistantLoadingIndicator = () => {
 };
 
 const findLastMessageIndexByRole = (
-  messages: ChatMessage[],
+  messages: DisplayMessageItem[],
   role: ChatMessage["role"],
 ) => {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index]?.role === role) {
+    if (messages[index]?.message.role === role) {
       return index;
     }
   }
@@ -561,17 +666,23 @@ const findLastMessageIndexByRole = (
 };
 
 const mergeDisplayMessages = (messages: ChatMessage[]) => {
-  const mergedMessages: ChatMessage[] = [];
+  const mergedMessages: DisplayMessageItem[] = [];
   let pendingTraceMessage: ChatMessage | null = null;
 
   for (const message of messages) {
     if (message.role !== "assistant") {
       if (pendingTraceMessage) {
-        mergedMessages.push(pendingTraceMessage);
+        mergedMessages.push({
+          key: pendingTraceMessage.id,
+          message: pendingTraceMessage,
+        });
         pendingTraceMessage = null;
       }
 
-      mergedMessages.push(message);
+      mergedMessages.push({
+        key: message.id,
+        message,
+      });
       continue;
     }
 
@@ -581,7 +692,10 @@ const mergeDisplayMessages = (messages: ChatMessage[]) => {
     }
 
     if (!pendingTraceMessage) {
-      mergedMessages.push(message);
+      mergedMessages.push({
+        key: message.id,
+        message,
+      });
       continue;
     }
 
@@ -590,7 +704,10 @@ const mergeDisplayMessages = (messages: ChatMessage[]) => {
   }
 
   if (pendingTraceMessage) {
-    mergedMessages.push(pendingTraceMessage);
+    mergedMessages.push({
+      key: pendingTraceMessage.id,
+      message: pendingTraceMessage,
+    });
   }
 
   return mergedMessages;
@@ -607,24 +724,34 @@ const isTraceOnlyAssistantMessage = (message: ChatMessage) => {
 const mergeAssistantTraceMessage = (
   traceMessage: ChatMessage,
   message: ChatMessage,
-): ChatMessage => {
+): DisplayMessageItem => {
   const tracePart = getAgentTracePart(traceMessage);
 
   if (!tracePart || getAgentTracePart(message)) {
-    return message;
+    return {
+      key: traceMessage.id,
+      message,
+    };
   }
 
   return {
-    ...message,
-    ...(message.metadata ? {} : traceMessage.metadata ? { metadata: traceMessage.metadata } : {}),
-    parts: [
-      ...message.parts,
-      {
-        data: tracePart.data,
-        id: tracePart.id,
-        type: tracePart.type,
-      },
-    ],
+    key: traceMessage.id,
+    message: {
+      ...message,
+      ...(message.metadata
+        ? {}
+        : traceMessage.metadata
+          ? { metadata: traceMessage.metadata }
+          : {}),
+      parts: [
+        ...message.parts,
+        {
+          data: tracePart.data,
+          id: tracePart.id,
+          type: tracePart.type,
+        },
+      ],
+    },
   };
 };
 

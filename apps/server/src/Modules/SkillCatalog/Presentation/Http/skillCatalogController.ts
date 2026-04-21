@@ -13,8 +13,8 @@ export class SkillCatalogController {
 
   @Get()
   @ApiEnvelopeResponse(SkillCatalogDto)
-  getCatalog() {
-    const skills = this.skillsService.getPublicCatalog();
+  async getCatalog() {
+    const skills = await this.skillsService.getPublicCatalog();
 
     return {
       popularSkillIds: skills

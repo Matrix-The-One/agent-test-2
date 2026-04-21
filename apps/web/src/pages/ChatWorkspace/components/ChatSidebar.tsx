@@ -3,6 +3,7 @@ import { Check, Loader2, Pencil, Search, Trash2, X } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
 
 import { sidebarActions } from "@/store/chat/sidebarData";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type {
   ChatConversationRecord,
   ChatRequestMode,
@@ -14,6 +15,7 @@ import { ChatConversationSearchDialog } from "./ChatConversationSearchDialog";
 
 type ChatSidebarProps = {
   activeConversationId?: string;
+  collapsed: boolean;
   conversations: ConversationPreview[];
   currentUserId?: string;
   defaultSearchConversations: ChatConversationRecord[];
@@ -34,6 +36,7 @@ type ChatSidebarProps = {
 
 export const ChatSidebar = ({
   activeConversationId,
+  collapsed,
   conversations,
   currentUserId,
   defaultSearchConversations,
@@ -48,6 +51,8 @@ export const ChatSidebar = ({
   onOpenConversation,
   onRenameConversation,
 }: ChatSidebarProps) => {
+  const isMobile = useIsMobile();
+  const isCompact = collapsed && !isMobile;
   const [editingConversationId, setEditingConversationId] = useState<string | null>(
     null,
   );
@@ -133,8 +138,18 @@ export const ChatSidebar = ({
 
   return (
     <>
-      <div className="flex h-full min-h-0 flex-col bg-[color:var(--sidebar-bg)] px-3 py-3 backdrop-blur">
-        <div className="flex items-center justify-between px-2">
+      <div
+        className={cn(
+          "flex h-full min-h-0 flex-col bg-[color:var(--sidebar-bg)] py-3 backdrop-blur",
+          isCompact ? "px-2" : "px-3",
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center",
+            isCompact ? "justify-center" : "justify-between px-2",
+          )}
+        >
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] text-lg font-semibold text-[color:var(--foreground)] shadow-[var(--shadow-soft)]">
             C
           </div>
@@ -147,7 +162,12 @@ export const ChatSidebar = ({
           </button>
         </div>
 
-        <div className="mt-4 space-y-1">
+        <div
+          className={cn(
+            "mt-4",
+            isCompact ? "space-y-2" : "space-y-1",
+          )}
+        >
           {sidebarActions.map((item) => {
             const Icon = item.icon;
             const isNewChat = item.id === "new-chat";
@@ -155,18 +175,23 @@ export const ChatSidebar = ({
             return (
               <button
                 key={item.id}
+                aria-label={item.label}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-[color:var(--foreground)] transition",
+                  "flex text-sm text-[color:var(--foreground)] transition",
                   isNewChat
                     ? "bg-black/6 font-medium hover:bg-black/8"
                     : "hover:bg-black/4",
+                  isCompact
+                    ? "mx-auto h-11 w-11 items-center justify-center rounded-2xl px-0"
+                    : "w-full items-center gap-3 rounded-2xl px-3 py-3 text-left",
                 )}
                 disabled={isBusy && isNewChat}
                 onClick={() => handleSidebarAction(item.id, item.prompt, item.mode)}
+                title={isCompact ? item.label : undefined}
                 type="button"
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                <span>{item.label}</span>
+                {isCompact ? null : <span>{item.label}</span>}
               </button>
             );
           })}
@@ -174,34 +199,47 @@ export const ChatSidebar = ({
 
         <div className="mt-6 min-h-0 flex-1">
           <div className="flex h-full min-h-0 flex-col">
-            <div className="flex items-center justify-between px-3">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--muted-foreground)]">
-                最近
-              </p>
-              <button
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted-foreground)] transition hover:bg-black/4 hover:text-[color:var(--foreground)]"
-                onClick={() => setIsSearchOpen(true)}
-                type="button"
-              >
-                <Search className="h-4 w-4" />
-              </button>
-            </div>
+            {isCompact ? (
+              <div className="px-3">
+                <div className="mx-auto h-px w-full rounded-full bg-[color:var(--border)]" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between px-3">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--muted-foreground)]">
+                  最近
+                </p>
+                <button
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[color:var(--muted-foreground)] transition hover:bg-black/4 hover:text-[color:var(--foreground)]"
+                  onClick={() => setIsSearchOpen(true)}
+                  type="button"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
-            <div className="mt-3 min-h-0 flex-1">
+            <div className={cn("min-h-0 flex-1", isCompact ? "mt-4" : "mt-3")}>
               {conversations.length === 0 ? (
-                <div className="flex items-center gap-2 px-3 py-4 text-sm text-[color:var(--muted-foreground)]">
+                <div
+                  className={cn(
+                    "flex text-[color:var(--muted-foreground)]",
+                    isCompact
+                      ? "justify-center px-0 py-4"
+                      : "items-center gap-2 px-3 py-4 text-sm",
+                  )}
+                >
                   {isLoadingConversations ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>正在加载会话...</span>
+                      {isCompact ? null : <span>正在加载会话...</span>}
                     </>
                   ) : (
-                    <span>暂无已保存会话</span>
+                    isCompact ? <span className="text-xs">-</span> : <span>暂无已保存会话</span>
                   )}
                 </div>
               ) : (
                 <Virtuoso
-                  className="h-full pr-1"
+                  className={cn("h-full", isCompact ? "" : "pr-1")}
                   computeItemKey={(_, item) => item.id}
                   data={conversations}
                   endReached={() => {
@@ -211,6 +249,32 @@ export const ChatSidebar = ({
                   }}
                   itemContent={(_, item) => {
                     const isEditing = editingConversationId === item.id;
+
+                    if (isCompact) {
+                      return (
+                        <div className="pb-2">
+                          <button
+                            aria-current={item.active ? "page" : undefined}
+                            aria-label={item.title}
+                            className={cn(
+                              "mx-auto flex h-11 w-11 items-center justify-center rounded-2xl border bg-[color:var(--surface)] text-sm font-medium text-[color:var(--foreground)] shadow-[var(--shadow-soft)] transition",
+                              item.active
+                                ? "border-[color:var(--foreground)]"
+                                : "border-transparent hover:border-[color:var(--border)]",
+                            )}
+                            onClick={() => {
+                              void onOpenConversation(item.id);
+                            }}
+                            title={`${item.title} · ${item.meta}`}
+                            type="button"
+                          >
+                            <span className="max-w-[2ch] truncate">
+                              {item.title.slice(0, 2)}
+                            </span>
+                          </button>
+                        </div>
+                      );
+                    }
 
                     return (
                       <div className="pb-1">

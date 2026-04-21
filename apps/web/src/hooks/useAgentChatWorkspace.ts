@@ -33,6 +33,17 @@ import type {
 const LOCAL_USER_STORAGE_KEY = "agent:local-user-id";
 const SAVED_CONVERSATIONS_PAGE_SIZE = 20;
 const STREAMING_RENDER_INTERVAL_MS = 80;
+const MAX_PENDING_IMAGES = 4;
+
+const createImageFileList = (files: File[]) => {
+  const dataTransfer = new DataTransfer();
+
+  for (const file of files) {
+    dataTransfer.items.add(file);
+  }
+
+  return dataTransfer.files;
+};
 
 const getStoredUserId = () => {
   if (typeof window === "undefined") {
@@ -134,6 +145,7 @@ export const useAgentChatWorkspace = () => {
   const [pendingImages, setPendingImages] = useState<FileUIPart[]>([]);
   const [selectedMode, setSelectedModeState] = useState<ChatRequestMode | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isStreamingRenderPaused, setStreamingRenderPaused] = useState(false);
   const activeConversationIdRef = useRef<string | undefined>(activeConversationId);
   const currentUserRef = useRef<ChatUser | null>(null);
@@ -451,9 +463,27 @@ export const useAgentChatWorkspace = () => {
       return;
     }
 
-    const nextImages = await convertFileListToFileUIParts(files);
+    const availableSlots = Math.max(0, MAX_PENDING_IMAGES - pendingImages.length);
 
-    setPendingImages((current) => [...current, ...nextImages].slice(0, 4));
+    if (availableSlots === 0) {
+      focusDraftAtEnd();
+      return;
+    }
+
+    const imageFiles = Array.from(files)
+      .filter((file) => file.type.startsWith("image/"))
+      .slice(0, availableSlots);
+
+    if (imageFiles.length === 0) {
+      focusDraftAtEnd();
+      return;
+    }
+
+    const nextImages = await convertFileListToFileUIParts(
+      createImageFileList(imageFiles),
+    );
+
+    setPendingImages((current) => [...current, ...nextImages].slice(0, MAX_PENDING_IMAGES));
     focusDraftAtEnd();
   };
 
@@ -606,6 +636,10 @@ export const useAgentChatWorkspace = () => {
     setSidebarOpen((open) => !open);
   };
 
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((collapsed) => !collapsed);
+  };
+
   return {
     awaitingClarification,
     chatId,
@@ -641,9 +675,11 @@ export const useAgentChatWorkspace = () => {
     setDraft,
     setSidebarOpen,
     setStreamingRenderPaused,
+    sidebarCollapsed,
     sidebarOpen,
     status,
     stop,
     toggleSidebar,
+    toggleSidebarCollapsed,
   };
 };

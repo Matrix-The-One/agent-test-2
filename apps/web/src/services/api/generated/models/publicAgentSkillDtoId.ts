@@ -11,10 +11,15 @@ export type PublicAgentSkillDtoId = typeof PublicAgentSkillDtoId[keyof typeof Pu
 
 export const PublicAgentSkillDtoId = {
   'project-context': 'project-context',
+  'workspace-inspection': 'workspace-inspection',
   'solution-architecture': 'solution-architecture',
   'delivery-planning': 'delivery-planning',
   'quality-guard': 'quality-guard',
   'content-creation': 'content-creation',
+  'file-creation': 'file-creation',
   'code-engineering': 'code-engineering',
+  'runtime-verification': 'runtime-verification',
+  'data-processing': 'data-processing',
   'document-production': 'document-production',
+  'amap-maps': 'amap-maps',
 } as const;

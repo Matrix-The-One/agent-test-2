@@ -8,7 +8,12 @@ export class ResolveImageRoleNode {
   @Inject(AgentImageRoleService)
   private readonly imageRoleService!: AgentImageRoleService;
 
-  async run(state: AgentWorkflowState) {
+  async run(
+    state: AgentWorkflowState,
+    _config?: {
+      signal?: AbortSignal;
+    },
+  ) {
     const decision = this.imageRoleService.detect({
       images: state.images,
       message: state.message,

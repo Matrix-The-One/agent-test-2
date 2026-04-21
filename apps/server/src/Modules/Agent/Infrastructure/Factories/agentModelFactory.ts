@@ -52,6 +52,10 @@ export class AgentModelFactory {
     switch (category) {
       case "project":
         return this.config.agentProjectModel;
+      case "location":
+        return this.config.agentLocationModel;
+      case "artifact":
+        return this.config.agentArtifactModel;
       case "content":
         return this.config.agentContentModel;
       case "document":
@@ -87,6 +91,9 @@ export class AgentModelFactory {
   private getSpecialistTemperature(category: AgentSkillCategory) {
     switch (category) {
       case "project":
+      case "location":
+        return 0.1;
+      case "artifact":
         return 0.1;
       case "content":
         return 0.6;

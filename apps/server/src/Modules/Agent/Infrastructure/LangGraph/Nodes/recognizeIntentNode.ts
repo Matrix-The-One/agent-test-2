@@ -8,12 +8,18 @@ export class RecognizeIntentNode {
   @Inject(AgentIntentService)
   private readonly intentService!: AgentIntentService;
 
-  async run(state: AgentWorkflowState) {
+  async run(
+    state: AgentWorkflowState,
+    config?: {
+      signal?: AbortSignal;
+    },
+  ) {
     const decision = await this.intentService.recognize({
       hasImages: state.hasImages,
       imageRole: state.imageRole,
       message: state.message,
       requestedMode: state.requestedMode,
+      signal: config?.signal,
     });
 
     return {

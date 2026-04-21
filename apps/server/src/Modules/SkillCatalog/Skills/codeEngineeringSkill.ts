@@ -2,6 +2,9 @@ import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 
 import type { AgentSkillDefinition } from "../Domain/agentSkillTypes.js";
+import { DockerScriptRunnerService } from "../Infrastructure/Execution/dockerScriptRunnerService.js";
+import { createRunJavaScriptInDockerTool } from "../Tools/runJavaScriptInDockerTool.js";
+import { createRunPythonInDockerTool } from "../Tools/runPythonInDockerTool.js";
 
 const createImplementationChecklistTool = () =>
   tool(
@@ -53,7 +56,9 @@ const createDebugChecklistTool = () =>
     },
   );
 
-export const createCodeEngineeringSkill = (): AgentSkillDefinition => ({
+export const createCodeEngineeringSkill = (
+  dockerScriptRunner: DockerScriptRunnerService,
+): AgentSkillDefinition => ({
   category: "engineering",
   categoryLabel: "代码工程",
   description: "用于代码实现、调试、重构和接口开发等工程型任务。",
@@ -73,10 +78,16 @@ export const createCodeEngineeringSkill = (): AgentSkillDefinition => ({
     "后端",
   ],
   tags: ["code", "implementation", "debug", "refactor", "api"],
-  tools: [createImplementationChecklistTool(), createDebugChecklistTool()],
+  tools: [
+    createImplementationChecklistTool(),
+    createDebugChecklistTool(),
+    createRunJavaScriptInDockerTool(dockerScriptRunner),
+    createRunPythonInDockerTool(dockerScriptRunner),
+  ],
   useCases: [
     "拆解一个实现任务的最小落地路径",
     "整理排错步骤和验证清单",
     "辅助接口开发、模块改造和代码修复",
+    "执行短小 JS / Python 脚本验证逻辑或复现问题",
   ],
 });

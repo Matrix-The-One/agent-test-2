@@ -14,10 +14,14 @@ const buildAgentWorkflowGraph = (
   afterIntentEdge: AfterIntentEdge,
 ) =>
   new StateGraph(agentWorkflowStateSchema)
-    .addNode("resolveImageRole", (state) => resolveImageRoleNode.run(state))
-    .addNode("recognizeIntent", (state) => recognizeIntentNode.run(state))
-    .addNode("resolveIntentSkills", (state) =>
-      resolveIntentSkillsNode.run(state),
+    .addNode("resolveImageRole", (state, config) =>
+      resolveImageRoleNode.run(state, config),
+    )
+    .addNode("recognizeIntent", (state, config) =>
+      recognizeIntentNode.run(state, config),
+    )
+    .addNode("resolveIntentSkills", (state, config) =>
+      resolveIntentSkillsNode.run(state, config),
     )
     .addEdge(START, "resolveImageRole")
     .addEdge("resolveImageRole", "recognizeIntent")

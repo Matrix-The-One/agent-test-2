@@ -11,10 +11,12 @@ export type PublicAgentSkillDtoCategory = typeof PublicAgentSkillDtoCategory[key
 
 export const PublicAgentSkillDtoCategory = {
   project: 'project',
+  location: 'location',
   architecture: 'architecture',
   delivery: 'delivery',
   quality: 'quality',
   content: 'content',
+  artifact: 'artifact',
   engineering: 'engineering',
   document: 'document',
 } as const;

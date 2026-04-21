@@ -11,10 +11,12 @@ export type AgentTraceStepDtoCategory = typeof AgentTraceStepDtoCategory[keyof t
 
 export const AgentTraceStepDtoCategory = {
   project: 'project',
+  location: 'location',
   architecture: 'architecture',
   delivery: 'delivery',
   quality: 'quality',
   content: 'content',
+  artifact: 'artifact',
   engineering: 'engineering',
   document: 'document',
 } as const;

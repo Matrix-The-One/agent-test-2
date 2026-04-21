@@ -8,6 +8,7 @@ import {
   AGENT_CONTEXT_RECENT_MESSAGES_TO_KEEP,
   AGENT_CONTEXT_SUMMARY_MAX_CHARS,
 } from "../../Domain/agentConstants.js";
+import { throwIfAborted } from "../../Domain/agentAbort.js";
 import type {
   AgentContextBudget,
   AgentExecutionTrace,
@@ -65,12 +66,15 @@ export class AgentContextWindowService {
     conversationId: string;
     intent: AgentIntent;
     specialistCategories: readonly AgentSkillCategory[];
+    signal?: AbortSignal;
     userId: string;
   }): Promise<PreparedConversationContext> {
     const budgetConfig = this.modelCatalogService.resolveConversationBudget({
       intent: input.intent,
       specialistCategories: input.specialistCategories,
     });
+    throwIfAborted(input.signal);
+
     const snapshot = await this.conversationService.getConversationContextSnapshot(
       input.userId,
       input.conversationId,
@@ -86,6 +90,7 @@ export class AgentContextWindowService {
     let tokenResult = await this.tokenCountService.countConversationInputTokens({
       messages: contextMessages,
       model: budgetConfig.model,
+      signal: input.signal,
     });
     let compactionApplied = false;
 
@@ -106,9 +111,12 @@ export class AgentContextWindowService {
         break;
       }
 
+      throwIfAborted(input.signal);
+
       const nextSummary = await this.summarizeMessages({
         currentSummary: summaryText,
         messages: candidateMessages,
+        signal: input.signal,
       });
 
       if (!nextSummary) {
@@ -131,6 +139,7 @@ export class AgentContextWindowService {
       tokenResult = await this.tokenCountService.countConversationInputTokens({
         messages: contextMessages,
         model: budgetConfig.model,
+        signal: input.signal,
       });
       compactionApplied = true;
     }
@@ -139,6 +148,7 @@ export class AgentContextWindowService {
       budgetModel: budgetConfig.model,
       maxConversationTokens: budgetConfig.maxConversationTokens,
       messages: remainingMessages,
+      signal: input.signal,
       summaryText,
     });
 
@@ -148,6 +158,7 @@ export class AgentContextWindowService {
       tokenResult = await this.tokenCountService.countConversationInputTokens({
         messages: contextMessages,
         model: budgetConfig.model,
+        signal: input.signal,
       });
     }
 
@@ -265,7 +276,10 @@ export class AgentContextWindowService {
   private async summarizeMessages(input: {
     currentSummary: string;
     messages: readonly ConversationMessageRecord[];
+    signal?: AbortSignal;
   }) {
+    throwIfAborted(input.signal);
+
     if (!this.config.providerConfigured) {
       return "";
     }
@@ -274,7 +288,9 @@ export class AgentContextWindowService {
     const response = await model.invoke([
       new SystemMessage(CONTEXT_SUMMARIZER_SYSTEM_PROMPT),
       new HumanMessage(this.buildSummaryInput(input)),
-    ]);
+    ], {
+      signal: input.signal,
+    });
     const summary = this.extractMessageText(response.content).trim();
 
     if (!summary) {
@@ -341,8 +357,11 @@ export class AgentContextWindowService {
     budgetModel: string;
     maxConversationTokens: number;
     messages: readonly ConversationMessageRecord[];
+    signal?: AbortSignal;
     summaryText: string;
   }) {
+    throwIfAborted(input.signal);
+
     const preferredTrimmedMessages = await this.trimMessagesToLimit({
       budgetModel: input.budgetModel,
       maxConversationTokens: input.maxConversationTokens,
@@ -351,6 +370,7 @@ export class AgentContextWindowService {
         input.messages.length,
         AGENT_CONTEXT_MIN_RECENT_MESSAGES_TO_KEEP,
       ),
+      signal: input.signal,
       summaryText: input.summaryText,
     });
 
@@ -359,6 +379,7 @@ export class AgentContextWindowService {
         budgetModel: input.budgetModel,
         maxConversationTokens: input.maxConversationTokens,
         messages: preferredTrimmedMessages,
+        signal: input.signal,
         summaryText: input.summaryText,
       })
     ) {
@@ -370,6 +391,7 @@ export class AgentContextWindowService {
       maxConversationTokens: input.maxConversationTokens,
       messages: preferredTrimmedMessages,
       minMessagesToKeep: Math.min(preferredTrimmedMessages.length, 1),
+      signal: input.signal,
       summaryText: input.summaryText,
     });
   }
@@ -379,16 +401,20 @@ export class AgentContextWindowService {
     maxConversationTokens: number;
     messages: readonly ConversationMessageRecord[];
     minMessagesToKeep: number;
+    signal?: AbortSignal;
     summaryText: string;
   }) {
     let messages = [...input.messages];
 
     while (messages.length > input.minMessagesToKeep) {
+      throwIfAborted(input.signal);
+
       if (
         await this.isWithinBudget({
           budgetModel: input.budgetModel,
           maxConversationTokens: input.maxConversationTokens,
           messages,
+          signal: input.signal,
           summaryText: input.summaryText,
         })
       ) {
@@ -405,11 +431,15 @@ export class AgentContextWindowService {
     budgetModel: string;
     maxConversationTokens: number;
     messages: readonly ConversationMessageRecord[];
+    signal?: AbortSignal;
     summaryText: string;
   }) {
+    throwIfAborted(input.signal);
+
     const tokenResult = await this.tokenCountService.countConversationInputTokens({
       messages: this.buildContextMessages(input.summaryText, input.messages),
       model: input.budgetModel,
+      signal: input.signal,
     });
 
     return tokenResult.inputTokens <= input.maxConversationTokens;

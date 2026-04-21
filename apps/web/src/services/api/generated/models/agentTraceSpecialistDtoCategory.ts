@@ -11,10 +11,12 @@ export type AgentTraceSpecialistDtoCategory = typeof AgentTraceSpecialistDtoCate
 
 export const AgentTraceSpecialistDtoCategory = {
   project: 'project',
+  location: 'location',
   architecture: 'architecture',
   delivery: 'delivery',
   quality: 'quality',
   content: 'content',
+  artifact: 'artifact',
   engineering: 'engineering',
   document: 'document',
 } as const;

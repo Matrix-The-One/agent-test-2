@@ -8,10 +8,12 @@ import { AGENT_SKILL_IDS } from "../../Modules/SkillCatalog/Domain/agentSkillTyp
 
 const AGENT_SKILL_CATEGORIES = [
   "project",
+  "location",
   "architecture",
   "delivery",
   "quality",
   "content",
+  "artifact",
   "engineering",
   "document",
 ] as const;

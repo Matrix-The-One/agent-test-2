@@ -1233,10 +1233,12 @@
             "type": "string",
             "enum": [
               "project",
+              "location",
               "architecture",
               "delivery",
               "quality",
               "content",
+              "artifact",
               "engineering",
               "document"
             ]
@@ -1253,12 +1255,17 @@
               "type": "string",
               "enum": [
                 "project-context",
+                "workspace-inspection",
                 "solution-architecture",
                 "delivery-planning",
                 "quality-guard",
                 "content-creation",
+                "file-creation",
                 "code-engineering",
-                "document-production"
+                "runtime-verification",
+                "data-processing",
+                "document-production",
+                "amap-maps"
               ]
             }
           },
@@ -1303,10 +1310,12 @@
             "type": "string",
             "enum": [
               "project",
+              "location",
               "architecture",
               "delivery",
               "quality",
               "content",
+              "artifact",
               "engineering",
               "document"
             ]
@@ -1411,12 +1420,17 @@
               "type": "string",
               "enum": [
                 "project-context",
+                "workspace-inspection",
                 "solution-architecture",
                 "delivery-planning",
                 "quality-guard",
                 "content-creation",
+                "file-creation",
                 "code-engineering",
-                "document-production"
+                "runtime-verification",
+                "data-processing",
+                "document-production",
+                "amap-maps"
               ]
             }
           },
@@ -1567,10 +1581,12 @@
             "type": "string",
             "enum": [
               "project",
+              "location",
               "architecture",
               "delivery",
               "quality",
               "content",
+              "artifact",
               "engineering",
               "document"
             ]
@@ -1585,12 +1601,17 @@
             "type": "string",
             "enum": [
               "project-context",
+              "workspace-inspection",
               "solution-architecture",
               "delivery-planning",
               "quality-guard",
               "content-creation",
+              "file-creation",
               "code-engineering",
-              "document-production"
+              "runtime-verification",
+              "data-processing",
+              "document-production",
+              "amap-maps"
             ]
           },
           "name": {
@@ -1643,12 +1664,17 @@
               "type": "string",
               "enum": [
                 "project-context",
+                "workspace-inspection",
                 "solution-architecture",
                 "delivery-planning",
                 "quality-guard",
                 "content-creation",
+                "file-creation",
                 "code-engineering",
-                "document-production"
+                "runtime-verification",
+                "data-processing",
+                "document-production",
+                "amap-maps"
               ]
             }
           },

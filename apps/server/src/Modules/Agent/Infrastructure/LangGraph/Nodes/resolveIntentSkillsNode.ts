@@ -8,7 +8,12 @@ export class ResolveIntentSkillsNode {
   @Inject(AgentIntentSkillService)
   private readonly intentSkillService!: AgentIntentSkillService;
 
-  async run(state: AgentWorkflowState) {
+  async run(
+    state: AgentWorkflowState,
+    _config?: {
+      signal?: AbortSignal;
+    },
+  ) {
     return {
       skillSelection: this.intentSkillService.resolve({
         hasImages: state.hasImages,

@@ -1,3 +1,5 @@
+import { Gauge } from "lucide-react";
+
 import {
   CHAT_AGENT_TOKEN_COUNTING_MODE_LABELS,
   type ChatAgentContextBudget,
@@ -11,10 +13,6 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
-const GAUGE_RADIUS = 16;
-const GAUGE_STROKE_WIDTH = 3.5;
-const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
 
 const formatTokenCount = (value: number) => {
   if (value >= 1_000_000) {
@@ -66,8 +64,6 @@ export const ChatContextGauge = ({
   isBusy,
 }: ChatContextGaugeProps) => {
   const usagePercent = Math.max(0, Math.min(100, budget?.usagePercent ?? 0));
-  const progressOffset =
-    GAUGE_CIRCUMFERENCE - (usagePercent / 100) * GAUGE_CIRCUMFERENCE;
   const gaugeColor = getGaugeColor(usagePercent);
   const compactionLabel = getCompactionLabel(budget);
   const usageLabel = budget
@@ -82,44 +78,28 @@ export const ChatContextGauge = ({
       <PopoverTrigger asChild>
         <Button
           aria-label={accessibilityLabel}
-          className="relative shrink-0 rounded-full border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)] shadow-[var(--shadow-soft)] hover:scale-[1.02] hover:bg-[color:var(--surface)]/92"
-          size="icon-lg"
+          className="relative shrink-0 rounded-full text-[color:var(--foreground)] shadow-none hover:bg-black/4"
+          size="icon-sm"
           type="button"
-          variant="outline"
+          variant="ghost"
         >
-          <span className="relative h-10 w-10 shrink-0">
-            <svg
-              className={`h-10 w-10 ${!budget && isBusy ? "animate-pulse" : ""}`}
-              viewBox="0 0 40 40"
-            >
-              <circle
-                cx="20"
-                cy="20"
-                fill="none"
-                r={GAUGE_RADIUS}
-                stroke="color-mix(in srgb, var(--border) 88%, transparent)"
-                strokeWidth={GAUGE_STROKE_WIDTH}
-              />
-              <circle
-                cx="20"
-                cy="20"
-                fill="none"
-                r={GAUGE_RADIUS}
-                stroke={budget ? gaugeColor : "color-mix(in srgb, var(--primary) 35%, transparent)"}
-                strokeDasharray={GAUGE_CIRCUMFERENCE}
-                strokeDashoffset={budget ? progressOffset : GAUGE_CIRCUMFERENCE * 0.75}
-                strokeLinecap="round"
-                strokeWidth={GAUGE_STROKE_WIDTH}
-                style={{
-                  transform: "rotate(-90deg)",
-                  transformOrigin: "20px 20px",
-                  transition: "stroke-dashoffset 240ms ease, stroke 240ms ease",
-                }}
-              />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold">
-              {budget ? `${Math.round(usagePercent)}%` : "--"}
-            </span>
+          <span className="relative flex h-8 w-8 items-center justify-center">
+            <Gauge
+              className={!budget && isBusy ? "animate-pulse" : undefined}
+              style={{
+                color: budget
+                  ? gaugeColor
+                  : "color-mix(in srgb, var(--primary) 45%, var(--muted-foreground))",
+              }}
+            />
+            <span
+              className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full"
+              style={{
+                backgroundColor: budget
+                  ? gaugeColor
+                  : "color-mix(in srgb, var(--primary) 45%, transparent)",
+              }}
+            />
           </span>
         </Button>
       </PopoverTrigger>
@@ -154,6 +134,21 @@ export const ChatContextGauge = ({
 
         {budget ? (
           <div className="mt-4 space-y-3 text-xs text-[color:var(--foreground)]">
+            <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--background)]/70 px-3 py-3">
+              <div className="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.16em] text-[color:var(--muted-foreground)]/75">
+                <span>Usage</span>
+                <span>{Math.round(usagePercent)}%</span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[color:var(--surface-muted)]">
+                <div
+                  className="h-full rounded-full transition-[width,background-color] duration-200"
+                  style={{
+                    backgroundColor: gaugeColor,
+                    width: `${usagePercent}%`,
+                  }}
+                />
+              </div>
+            </div>
             <GaugeMetaRow label="模型" value={budget.model} />
             <GaugeMetaRow label="窗口" value={usageLabel} />
             <GaugeMetaRow label="压缩" value={compactionLabel} />
