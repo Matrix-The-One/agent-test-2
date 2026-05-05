@@ -62,6 +62,7 @@ export class ConversationsController {
     @Query(new ZodValidationPipe(conversationListQuerySchema))
     query: ConversationListQueryDto,
   ) {
+    // 侧边栏列表：按用户、分页、可选标题搜索查询会话。
     return this.conversationService.listConversations(query.userId, {
       cursor: query.cursor,
       limit: query.limit,
@@ -76,6 +77,7 @@ export class ConversationsController {
     @Body(new ZodValidationPipe(createConversationRequestSchema))
     body: CreateConversationRequestDto,
   ) {
+    // 手动新建会话；Agent 流式请求也会在 ConversationService 中自动 upsert 会话。
     return this.conversationService.createConversation(body);
   }
 
@@ -89,6 +91,7 @@ export class ConversationsController {
     @Body(new ZodValidationPipe(updateConversationRequestSchema))
     body: UpdateConversationRequestDto,
   ) {
+    // 重命名或更新会话 mode。
     return this.conversationService.updateConversation({
       conversationId: params.conversationId,
       mode: body.mode,
@@ -107,6 +110,7 @@ export class ConversationsController {
     @Query(new ZodValidationPipe(conversationMessagesQuerySchema))
     query: ConversationMessagesQueryDto,
   ) {
+    // 打开历史会话时加载用户可见消息；system summary 默认不返回。
     return this.conversationService.getConversationMessages(
       query.userId,
       params.conversationId,
@@ -123,6 +127,7 @@ export class ConversationsController {
     @Query(new ZodValidationPipe(conversationMessagesQuerySchema))
     query: ConversationMessagesQueryDto,
   ) {
+    // 删除会话；数据库关系会级联删除消息。
     return this.conversationService.deleteConversation(
       query.userId,
       params.conversationId,

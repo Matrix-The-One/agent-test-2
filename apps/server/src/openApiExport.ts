@@ -10,6 +10,7 @@ const defaultOutputPath = resolve(
 );
 
 const resolveOutputPath = () => {
+  // 允许命令行传自定义输出路径；默认写到 web/openapi 供 Orval 生成客户端。
   const explicitPath = process.argv[2];
 
   return explicitPath
@@ -18,6 +19,7 @@ const resolveOutputPath = () => {
 };
 
 async function exportOpenApi() {
+  // 导出时创建一个无日志 Nest 应用，只生成文档，不启动监听端口。
   const outputPath = resolveOutputPath();
   const app = await createApp({ logger: false });
 

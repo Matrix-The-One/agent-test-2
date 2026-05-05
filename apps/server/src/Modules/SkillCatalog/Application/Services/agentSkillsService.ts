@@ -36,6 +36,7 @@ export class AgentSkillsService {
   private skillMapCache?: Promise<Map<AgentSkillId, AgentSkillDefinition>>;
 
   async getPublicCatalog(): Promise<PublicAgentSkill[]> {
+    // 公共目录给前端展示，只暴露 toolNames，不暴露 routingHints 和真实 tool 对象。
     const skills = await this.getSkills();
 
     return skills.map(({ routingHints, tools, ...skill }) => ({
@@ -45,6 +46,7 @@ export class AgentSkillsService {
   }
 
   async getSkillsByIds(skillIds: readonly AgentSkillId[]) {
+    // AgentIntentSkillService 只返回 skillIds；AgentService 在这里解析成完整定义。
     const skillMap = await this.getSkillMap();
 
     return skillIds
@@ -53,6 +55,7 @@ export class AgentSkillsService {
   }
 
   private async getSkills() {
+    // skills 可能包含远程 MCP tools，初始化后缓存，避免每次请求重复拉取。
     if (!this.skillsCache) {
       this.skillsCache = this.loadSkills();
     }
@@ -69,6 +72,7 @@ export class AgentSkillsService {
   }
 
   private async loadSkills() {
+    // 本地 skills 是固定注册表；外部 MCP skill 按配置动态追加。
     const skills: AgentSkillDefinition[] = [
       createProjectContextSkill(),
       createWorkspaceInspectionSkill(this.dockerScriptRunner),
@@ -85,6 +89,7 @@ export class AgentSkillsService {
     const amapTools = await this.amapMcpService.getTools();
 
     if (amapTools.length > 0) {
+      // AMap MCP 可用时才把位置 specialist 纳入目录和路由候选。
       skills.push(createAmapMapsSkill(amapTools));
     }
 
@@ -92,6 +97,7 @@ export class AgentSkillsService {
   }
 
   private async loadSkillMap() {
+    // Map 方便按 id 快速解析路由结果。
     return new Map(
       (await this.getSkills()).map((skill) => [skill.id, skill] as const),
     );

@@ -6,6 +6,7 @@ import {
   formatDockerScriptRunResult,
 } from "../Infrastructure/Execution/dockerScriptRunnerService.js";
 
+// Docker 脚本工具的模型入参约束：短脚本、少量参数、短超时、可选只读工作区。
 const dockerScriptSchema = z.object({
   args: z.array(z.string().max(200)).max(8).default([]),
   script: z.string().trim().min(1).max(20000),
@@ -18,6 +19,7 @@ export const createRunPythonInDockerTool = (
 ) =>
   tool(
     async ({ args, script, timeoutSeconds, workspaceAccess }) =>
+      // tool 只做参数转换，安全隔离和执行细节由 DockerScriptRunnerService 统一处理。
       formatDockerScriptRunResult(
         await dockerScriptRunner.runPython({
           args,

@@ -18,6 +18,7 @@ export class HealthController {
   @Get()
   @ApiEnvelopeResponse(HealthStatusDto)
   getHealth() {
+    // health 不主动查询数据库，只返回 PrismaService 当前连接状态和关键配置是否存在。
     return {
       databaseConfigured: this.config.databaseConfigured,
       databaseReady: this.prismaService.isReady,

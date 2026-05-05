@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { AgentSkillDefinition } from "../Domain/agentSkillTypes.js";
 
 const createDocumentOutlineTool = () =>
+  // 文档提纲工具负责结构，不负责真实文件创建。
   tool(
     async ({
       documentType,
@@ -33,6 +34,7 @@ const createDocumentOutlineTool = () =>
   );
 
 const createDeliveryFormatTool = () =>
+  // 格式清单帮助 document specialist 把内容转成可交付文档形态。
   tool(
     async ({
       audience,
@@ -61,6 +63,7 @@ const createDeliveryFormatTool = () =>
   );
 
 export const createDocumentProductionSkill = (): AgentSkillDefinition => ({
+  // document category 主要用于 writing fixed-chain 的后段整理。
   category: "document",
   categoryLabel: "文档生产",
   description: "用于报告、方案、汇报和正式文档类交付物的结构设计与整理。",

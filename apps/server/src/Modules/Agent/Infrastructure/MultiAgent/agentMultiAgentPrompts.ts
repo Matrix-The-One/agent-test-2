@@ -20,6 +20,7 @@ type ChainResult = {
   output: string;
 };
 
+// category 级 metadata 同时服务 prompt、tool name 和 trace 展示。
 const SPECIALIST_METADATA: Record<AgentSkillCategory, SpecialistMetadata> = {
   architecture: {
     agentName: "architecture_specialist",
@@ -98,6 +99,7 @@ export const buildSupervisorSystemPrompt = ({
   intent: AgentIntent;
   specialists: readonly SpecialistDescriptor[];
 }) =>
+  // dynamic-supervisor 的系统提示词：告诉 supervisor 有哪些 specialist tools，以及如何委派。
   [
     "You are the supervisor agent in a multi-agent backend assistant.",
     `Resolved top-level intent: ${intent}.`,
@@ -128,6 +130,7 @@ export const buildSpecialistSystemPrompt = ({
 }) => {
   const metadata = getSpecialistMetadata(category);
 
+  // specialist 的提示词强调“为 supervisor 工作”，输出高信号中间结果，而不是直接面向用户。
   return [
     `You are the ${metadata.displayName} inside a multi-agent system.`,
     `Top-level user intent is ${intent}.`,
@@ -148,6 +151,7 @@ export const buildChainSynthesisSystemPrompt = ({
   imageRole: AgentImageRole;
   intent: AgentIntent;
 }) =>
+  // fixed-chain 最终整合提示词：只负责把上游 specialist notes 变成用户可读最终答案。
   [
     "You are the final synthesis agent in a multi-agent backend assistant.",
     `Resolved top-level intent: ${intent}.`,
@@ -163,4 +167,5 @@ export const buildChainSynthesisSystemPrompt = ({
   ].join("\n");
 
 export const formatChainResults = (results: readonly ChainResult[]) =>
+  // 用稳定格式串联 specialist 输出，方便后续 specialist/synthesis 模型读取。
   results.map((result) => `## ${result.category}\n${result.output}`).join("\n\n");

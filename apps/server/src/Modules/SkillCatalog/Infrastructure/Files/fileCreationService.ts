@@ -51,12 +51,14 @@ type WriteTextFileInput = {
 const toPosixPath = (value: string) => value.split(sep).join("/");
 
 const formatFileCreationError = (error: unknown) => {
+  // tool 捕获异常后返回文本给模型，而不是让整条 Agent 请求失败。
   const message = error instanceof Error ? error.message : "Unknown file creation error.";
 
   return `File creation failed: ${message}`;
 };
 
 const getCellDisplayLength = (value: SpreadsheetCellValue) => {
+  // 用于估算 xlsx 列宽，让生成的表格打开后可读。
   if (value === null) {
     return 0;
   }
@@ -77,6 +79,7 @@ export class FileCreationService {
   private readonly config!: AppConfigService;
 
   async createTextFile(input: WriteTextFileInput) {
+    // txt/md/js/py 都走 UTF-8 文本写入路径。
     const normalizedTarget = this.resolveTargetPath(input.relativePath, `.${input.format}`);
     const contentBuffer = Buffer.from(input.content, "utf8");
 
@@ -93,6 +96,7 @@ export class FileCreationService {
     overwrite?: boolean;
     relativePath: string;
   }) {
+    // docx 使用结构化 blocks，避免把整份文档作为一段纯文本写入。
     const normalizedTarget = this.resolveTargetPath(input.relativePath, ".docx");
     const document = new Document({
       sections: [
@@ -117,6 +121,7 @@ export class FileCreationService {
     relativePath: string;
     sheets: SpreadsheetSheetInput[];
   }) {
+    // xlsx 使用 ExcelJS 生成真实 workbook，而不是写 CSV 伪装成 xlsx。
     const normalizedTarget = this.resolveTargetPath(input.relativePath, ".xlsx");
     const workbook = new ExcelJS.Workbook();
 
@@ -187,6 +192,7 @@ export class FileCreationService {
     overwrite: boolean;
     relativePath: string;
   }): Promise<CreatedFileResult> {
+    // 所有文件最终都通过这个方法写入，集中处理覆盖保护和目录创建。
     const absolutePath = resolve(this.config.agentFileOutputRoot, input.relativePath);
     const overwritten = await this.fileExists(absolutePath);
 
@@ -210,6 +216,7 @@ export class FileCreationService {
   }
 
   private mapDocxBlockToParagraph(block: DocxBlockInput) {
+    // 将工具入参里的简单 block 类型映射到 docx 段落样式。
     switch (block.type) {
       case "title":
         return new Paragraph({
@@ -239,6 +246,7 @@ export class FileCreationService {
   }
 
   private resolveTargetPath(relativePath: string, expectedExtension: `.${FileFormat}`) {
+    // 文件工具只允许写入配置根目录下的相对路径，防止路径穿越和误写系统文件。
     let normalizedRelativePath = relativePath.trim().replace(/\\/g, "/");
 
     if (!normalizedRelativePath) {
@@ -285,6 +293,7 @@ export class FileCreationService {
   }
 
   private async fileExists(path: string) {
+    // 只把已存在的普通文件视为 overwritten；目录等异常情况交给后续 writeFile 抛错。
     try {
       await access(path, fsConstants.F_OK);
       const fileStat = await stat(path);
@@ -297,6 +306,7 @@ export class FileCreationService {
 }
 
 export const formatCreatedFileResult = (result: CreatedFileResult) =>
+  // 工具返回创建结果给模型，模型再在最终答案里向用户说明产物路径。
   [
     "File creation result",
     `Format: ${result.format}`,

@@ -14,6 +14,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   constructor(private readonly httpAdapter: AbstractHttpAdapter) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
+    // 全局异常过滤器把 Nest/未知异常归一化成前端可处理的响应结构。
     const context = host.switchToHttp();
     const request = context.getRequest<{
       headers?: {
@@ -31,6 +32,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const normalized = this.normalizeException(exception, status);
 
     if (this.isStreamRequest(request)) {
+      // SSE 连接不能返回 JSON envelope，否则前端流解析会失败。
       this.httpAdapter.reply(response, normalized.errorMsg, status);
       return;
     }
@@ -58,6 +60,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   }
 
   private normalizeException(exception: unknown, status: number) {
+    // Nest HttpException 的 response 可能是 string，也可能是对象或校验错误数组。
     if (!(exception instanceof HttpException)) {
       return {
         errorCode: this.getDefaultErrorCode(status),

@@ -10,8 +10,11 @@ import { HealthModule } from "./Modules/Health/healthModule.js";
 import { SkillCatalogModule } from "./Modules/SkillCatalog/skillCatalogModule.js";
 import { UsersModule } from "./Modules/Users/usersModule.js";
 
+// AppModule 是服务端模块树根节点。
+// 阅读 Nest 项目时可以从这里看“有哪些功能模块”和“全局基础设施从哪里接入”。
 @Module({
   imports: [
+    // ConfigModule 只负责把 process.env 交给 validateEnv 校验；env 文件加载发生在 Config/env.ts。
     ConfigModule.forRoot({
       cache: true,
       ignoreEnvFile: true,
@@ -20,6 +23,7 @@ import { UsersModule } from "./Modules/Users/usersModule.js";
     }),
     AppConfigModule,
     PrismaModule,
+    // 业务模块按依赖顺序注册：基础健康检查、用户、会话、技能目录、Agent 编排。
     HealthModule,
     UsersModule,
     ConversationsModule,

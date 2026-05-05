@@ -1,5 +1,6 @@
 import type { StructuredToolInterface } from "@langchain/core/tools";
 
+// Skill 是 Agent 可路由的能力单元；每个 skill 可以带 0 到多个 LangChain tools。
 export const AGENT_SKILL_IDS = [
   "project-context",
   "workspace-inspection",
@@ -19,6 +20,7 @@ export const MAX_ROUTED_AGENT_SKILLS = 5;
 
 export type AgentSkillId = (typeof AGENT_SKILL_IDS)[number];
 
+// category 决定 specialist 分组；同 category 的多个 skill 会合并成一个 specialist agent。
 export type AgentSkillCategory =
   | "project"
   | "location"
@@ -33,6 +35,7 @@ export type AgentSkillCategory =
 export type AgentSkillPopularity = "core" | "popular";
 
 export type AgentSkillDefinition = {
+  // 完整 skill 定义只在服务端内部使用，tools 不会直接暴露给前端。
   id: AgentSkillId;
   name: string;
   description: string;
@@ -52,6 +55,7 @@ export type AgentSkillSelection = {
 };
 
 export type PublicAgentSkill = Omit<
+  // 前端技能目录只需要展示信息和 toolNames，不能拿到可执行 tool 对象。
   AgentSkillDefinition,
   "routingHints" | "tools"
 > & {

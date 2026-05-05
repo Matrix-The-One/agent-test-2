@@ -6,6 +6,8 @@ import {
 } from "../../Modules/Agent/Domain/agentTypes.js";
 import { AGENT_SKILL_IDS } from "../../Modules/SkillCatalog/Domain/agentSkillTypes.js";
 
+// 这个文件只服务 OpenAPI 文档生成。
+// 运行时校验主要由各模块 Domain 下的 Zod schema 负责；DTO 负责让 Swagger/Orval 得到准确类型。
 const AGENT_SKILL_CATEGORIES = [
   "project",
   "location",

@@ -27,6 +27,7 @@ export class PrismaService
     @Inject(AppConfigService)
     private readonly config: AppConfigService,
   ) {
+    // Prisma 7 使用 driver adapter；DATABASE_URL 缺失时仍构造 client，但 onModuleInit 不连接。
     const adapter = new PrismaPg({
       connectionString:
         config.databaseUrl ??
@@ -41,6 +42,7 @@ export class PrismaService
   }
 
   async onModuleInit() {
+    // 本地只看前端或无数据库场景时允许服务启动，但 health 会显示 databaseReady=false。
     if (!this.config.databaseConfigured) {
       this.logger.warn("DATABASE_URL is missing. PostgreSQL persistence is disabled.");
       return;
@@ -52,6 +54,7 @@ export class PrismaService
   }
 
   async onModuleDestroy() {
+    // Nest 进程关闭时释放数据库连接。
     if (!this.ready) {
       return;
     }

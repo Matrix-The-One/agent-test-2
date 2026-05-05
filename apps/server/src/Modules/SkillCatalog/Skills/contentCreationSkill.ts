@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { AgentSkillDefinition } from "../Domain/agentSkillTypes.js";
 
 const createWritingBlueprintTool = () =>
+  // 写作蓝图工具给内容 specialist 一个稳定结构，不直接替代最终正文生成。
   tool(
     async ({
       audience,
@@ -35,6 +36,7 @@ const createWritingBlueprintTool = () =>
   );
 
 const createEditingChecklistTool = () =>
+  // 编辑清单工具用于润色/改写任务的质量检查。
   tool(
     async ({
       contentType,
@@ -63,6 +65,7 @@ const createEditingChecklistTool = () =>
   );
 
 export const createContentCreationSkill = (): AgentSkillDefinition => ({
+  // content category 主要服务 writing 意图中的正文生成和内容打磨。
   category: "content",
   categoryLabel: "内容创作",
   description: "用于文章写作、内容提纲、文案润色和摘要整理等文字任务。",

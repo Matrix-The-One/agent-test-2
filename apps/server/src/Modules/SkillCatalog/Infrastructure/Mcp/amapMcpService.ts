@@ -16,6 +16,7 @@ export class AmapMcpService implements OnModuleDestroy {
   private toolsPromise?: Promise<StructuredToolInterface[]>;
 
   async getTools(): Promise<StructuredToolInterface[]> {
+    // MCP 是可选能力：未启用时返回空数组，SkillCatalog 不注册 amap-maps skill。
     if (!this.config.amapMapsMcpEnabled) {
       return [];
     }
@@ -34,6 +35,7 @@ export class AmapMcpService implements OnModuleDestroy {
     this.toolsPromise ??= this.loadTools();
 
     try {
+      // 缓存初始化 promise，避免并发请求重复创建 MCP client。
       return await this.toolsPromise;
     } catch (error) {
       this.toolsPromise = undefined;
@@ -51,6 +53,7 @@ export class AmapMcpService implements OnModuleDestroy {
   }
 
   private async loadTools() {
+    // 从 AMap MCP server 拉取 LangChain 可用的 StructuredToolInterface。
     const client = this.getOrCreateClient();
     const tools = await client.getTools("amap");
 
@@ -64,6 +67,7 @@ export class AmapMcpService implements OnModuleDestroy {
   }
 
   private getOrCreateClient() {
+    // MultiServerMCPClient 可以挂多个 server，这里只注册 amap。
     if (this.client) {
       return this.client;
     }
@@ -88,6 +92,7 @@ export class AmapMcpService implements OnModuleDestroy {
   }
 
   private buildAmapMcpUrl() {
+    // AMap MCP API key 通过 query 参数传入。
     const url = new URL(this.config.amapMapsMcpBaseUrl);
     url.searchParams.set("key", this.config.amapMapsApiKey!);
 
@@ -95,6 +100,7 @@ export class AmapMcpService implements OnModuleDestroy {
   }
 
   private async closeClient() {
+    // Nest 模块销毁时关闭 MCP 连接，避免进程退出时悬挂。
     if (!this.client) {
       return;
     }

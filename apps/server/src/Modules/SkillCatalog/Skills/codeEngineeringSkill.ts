@@ -7,6 +7,7 @@ import { createRunJavaScriptInDockerTool } from "../Tools/runJavaScriptInDockerT
 import { createRunPythonInDockerTool } from "../Tools/runPythonInDockerTool.js";
 
 const createImplementationChecklistTool = () =>
+  // checklist tool 给模型提供稳定的工程落地框架，不访问外部资源。
   tool(
     async ({ stack, task }: { stack: string; task: string }) =>
       [
@@ -29,6 +30,7 @@ const createImplementationChecklistTool = () =>
   );
 
 const createDebugChecklistTool = () =>
+  // debug checklist 用于把排错任务结构化，帮助 specialist 输出更可执行。
   tool(
     async ({
       symptom,
@@ -59,6 +61,7 @@ const createDebugChecklistTool = () =>
 export const createCodeEngineeringSkill = (
   dockerScriptRunner: DockerScriptRunnerService,
 ): AgentSkillDefinition => ({
+  // engineering category 会和 runtime/data-processing 等同类 skill 合并成一个 engineering specialist。
   category: "engineering",
   categoryLabel: "代码工程",
   description: "用于代码实现、调试、重构和接口开发等工程型任务。",

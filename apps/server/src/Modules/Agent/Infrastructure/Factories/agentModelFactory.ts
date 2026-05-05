@@ -11,12 +11,14 @@ export class AgentModelFactory {
   private readonly config!: AppConfigService;
 
   createSupervisorModel() {
+    // supervisor 负责调度和最终整合，温度低一些以保持稳定。
     return this.createModel(this.getSupervisorModelName(), {
       temperature: 0.2,
     });
   }
 
   createIntentModel() {
+    // 意图识别必须稳定可复现，禁用重试并使用 0 温度。
     return this.createModel(this.getIntentModelName(), {
       maxRetries: 0,
       temperature: 0,
@@ -24,12 +26,14 @@ export class AgentModelFactory {
   }
 
   createSpecialistModel(category: AgentSkillCategory) {
+    // 不同 specialist 的创造性需求不同，例如 content 可以更发散，quality 更保守。
     return this.createModel(this.getSpecialistModelName(category), {
       temperature: this.getSpecialistTemperature(category),
     });
   }
 
   createCompactionModel() {
+    // 上下文摘要要稳定保留事实，不追求创造性。
     return this.createModel(this.getCompactionModelName(), {
       maxRetries: 0,
       temperature: 0.1,
@@ -49,6 +53,7 @@ export class AgentModelFactory {
   }
 
   getSpecialistModelName(category: AgentSkillCategory) {
+    // 每类 specialist 可以单独配置模型，方便按成本/能力做角色分层。
     switch (category) {
       case "project":
         return this.config.agentProjectModel;
@@ -75,6 +80,7 @@ export class AgentModelFactory {
     intent: AgentIntent;
     specialistCategories: readonly AgentSkillCategory[];
   }) {
+    // 给上下文预算服务使用：找出本轮可能参与执行的所有模型。
     const names = new Set<string>([this.getSupervisorModelName()]);
 
     for (const category of input.specialistCategories) {
@@ -89,6 +95,7 @@ export class AgentModelFactory {
   }
 
   private getSpecialistTemperature(category: AgentSkillCategory) {
+    // 温度按任务性质分层：事实/工具型低温，内容创作稍高。
     switch (category) {
       case "project":
       case "location":
@@ -115,6 +122,7 @@ export class AgentModelFactory {
       temperature?: number;
     },
   ) {
+    // 项目通过 OpenAI 兼容接口接入模型；OPENAI_BASE_URL 可指向代理或兼容服务。
     return new ChatOpenAI({
       apiKey: this.config.openAiApiKey,
       configuration: this.config.openAiBaseUrl

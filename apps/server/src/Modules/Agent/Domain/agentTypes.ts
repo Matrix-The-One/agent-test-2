@@ -3,7 +3,9 @@ import type {
   AgentSkillId,
 } from "../../SkillCatalog/Domain/agentSkillTypes.js";
 
+// Agent 的顶层意图分类。第一层工作流会把每次请求归到其中一种。
 export const AGENT_INTENTS = ["chat", "writing", "coding", "image"] as const;
+// 图片角色表示“图片在本轮请求里扮演什么角色”，不是最终意图。
 export const AGENT_IMAGE_ROLES = [
   "none",
   "analyze",
@@ -38,6 +40,7 @@ export type AgentWorkflowSkillSelection = {
 };
 
 export type AgentExecutionContext = {
+  // 传给第二层 supervisor/specialist 图的本轮固定上下文。
   hasImages: boolean;
   imageRole: AgentImageRole;
   images: AgentImageInput[];
@@ -55,6 +58,7 @@ export type AgentTokenCountingMode = "exact" | "tokenizer" | "estimated";
 export type AgentContextCompactionStrategy = "none" | "running-summary";
 
 export type AgentContextBudget = {
+  // 上下文窗口预算会写入 trace，帮助前端展示本轮历史消息占用情况。
   model: string;
   countingMode: AgentTokenCountingMode;
   contextWindowTokens: number;
@@ -109,6 +113,7 @@ export type AgentExecutionPlan = {
 };
 
 export type AgentExecutionTrace = {
+  // trace 是 Agent 可观测性的核心结构：路由、预算、执行计划和步骤状态都在这里。
   startedAt: string;
   updatedAt: string;
   threadId: string;

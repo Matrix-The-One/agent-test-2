@@ -12,6 +12,7 @@ import {
 export const createFileCreationSkill = (
   fileCreationService: FileCreationService,
 ): AgentSkillDefinition => ({
+  // artifact category 只在用户明确需要文件产物时才应被路由命中。
   category: "artifact",
   categoryLabel: "文件创建",
   description:

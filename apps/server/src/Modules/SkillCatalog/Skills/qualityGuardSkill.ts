@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { AgentSkillDefinition } from "../Domain/agentSkillTypes.js";
 
 const createReviewChecklistTool = () =>
+  // 质量检查工具强调风险、回归和验证缺口，适合作为 coding 链路尾部兜底。
   tool(
     async ({
       changeType,
@@ -32,6 +33,7 @@ const createReviewChecklistTool = () =>
   );
 
 export const createQualityGuardSkill = (): AgentSkillDefinition => ({
+  // quality category 通常在 fixed-chain 最后执行，用于审视前面 specialist 的输出。
   category: "quality",
   categoryLabel: "质量护栏",
   description: "用于 code review、风险检查、回归范围判断和质量问题提示。",

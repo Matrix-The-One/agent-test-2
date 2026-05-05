@@ -39,6 +39,7 @@ export class AgentTokenCountService {
     model: string;
     signal?: AbortSignal;
   }) {
+    // token 计数有三层兜底：官方/兼容接口 exact -> 本地 tokenizer -> 启发式估算。
     throwIfAborted(input.signal);
 
     const estimatedTokens = this.estimateTokens(input.messages);
@@ -55,10 +56,12 @@ export class AgentTokenCountService {
           };
 
     if (!this.config.tokenCountProviderConfigured) {
+      // 没有配置 token count key 时，不影响主链路，直接使用本地结果。
       return fallbackResult;
     }
 
     if (this.countEndpointSupport === "unsupported") {
+      // 一旦确认接口不可用，后续请求不再重复探测。
       return fallbackResult;
     }
 
@@ -114,6 +117,7 @@ export class AgentTokenCountService {
   }
 
   private buildMessageContent(message: ContextTokenMessage) {
+    // token count endpoint 使用 Responses API 风格的 input_text/input_image content。
     const normalizedText = message.text.trim();
 
     if (!message.images?.length) {
@@ -142,6 +146,7 @@ export class AgentTokenCountService {
     messages: readonly ContextTokenMessage[];
     model: string;
   }) {
+    // 本地 tokenizer 不能完全等同模型真实计数，但比字符估算更稳定。
     const tokenizer = this.resolveTokenizer(input.model);
 
     if (!tokenizer) {
@@ -159,6 +164,7 @@ export class AgentTokenCountService {
   }
 
   private resolveTokenizer(model: string) {
+    // tokenizer 创建有成本，所以按模型名缓存。
     const normalizedModel = model.trim();
     const cachedTokenizer = this.tokenizers.get(normalizedModel);
 
@@ -189,6 +195,7 @@ export class AgentTokenCountService {
   }
 
   private resolveFallbackEncodingName(model: string) {
+    // 新模型优先用 o200k_base；老模型回退 cl100k_base。
     if (
       model.startsWith("gpt-5")
       || model.startsWith("gpt-4.1")
@@ -208,6 +215,7 @@ export class AgentTokenCountService {
   }
 
   private markCountEndpointUnsupported() {
+    // 只在第一次发现接口不可用时打日志，避免刷屏。
     if (this.countEndpointSupport === "unsupported") {
       return;
     }
@@ -219,6 +227,7 @@ export class AgentTokenCountService {
   }
 
   private estimateTokens(messages: readonly ContextTokenMessage[]) {
+    // 最后的启发式估算：英文大约 4 字符 1 token，中文按更高比例估算，图片按固定成本估算。
     return messages.reduce((total, message) => {
       const text = message.text.trim();
       const imageTokenEstimate = (message.images?.length ?? 0) * 256;

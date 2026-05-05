@@ -20,6 +20,7 @@ import { AgentChatRequestDto } from "./agentHttpDtos.js";
 
 const AGENT_SSE_HEARTBEAT_INTERVAL_MS = 15_000;
 
+// 这个 Controller 专门处理 Agent 的流式回复；普通会话 CRUD 在 Conversations 模块中。
 @Controller("agent")
 @ApiTags("agent")
 export class AgentController {
@@ -29,6 +30,7 @@ export class AgentController {
   private writeError(reply: FastifyReply, error: unknown) {
     const message = this.agentService.normalizeError(error);
 
+    // SSE 连接一旦开始写入 headers，就不能再切回标准 JSON 错误响应。
     if (reply.raw.headersSent || reply.raw.writableEnded) {
       if (!reply.raw.writableEnded) {
         reply.raw.end(message);
@@ -44,6 +46,7 @@ export class AgentController {
   }
 
   @Post("stream")
+  // 流式响应必须跳过全局 ApiResponseInterceptor，否则 SSE 会被包成 JSON。
   @RawResponse()
   @ApiConsumes("application/json")
   @ApiProduces("text/event-stream")
@@ -63,6 +66,7 @@ export class AgentController {
     @Req() request: FastifyRequest,
     @Res() reply: FastifyReply,
   ) {
+    // 前端停止生成、刷新页面或网络断开时，用同一个 AbortSignal 传给下游模型和图执行。
     const abortController = new AbortController();
     let heartbeatHandle: NodeJS.Timeout | undefined;
     let responseFinished = false;
@@ -85,6 +89,7 @@ export class AgentController {
     };
 
     const writeHeartbeat = () => {
+      // 代理或浏览器可能会关闭长时间无数据的 SSE 连接，心跳用于保持连接活跃。
       if (reply.raw.destroyed || reply.raw.writableEnded) {
         clearHeartbeat();
         return;
@@ -97,6 +102,7 @@ export class AgentController {
       }
     };
 
+    // Fastify/Node 的几个生命周期事件语义不同，这里统一收敛成清理心跳和中断下游执行。
     request.raw.once("aborted", abortStream);
     reply.raw.once("error", () => {
       clearHeartbeat();
@@ -116,6 +122,7 @@ export class AgentController {
 
     try {
       const stream = this.agentService.streamReply(body, abortController.signal);
+      // hijack 后由 AI SDK 直接写入原始 Node response，Nest 不再接管返回值。
       reply.hijack();
 
       pipeUIMessageStreamToResponse({

@@ -14,10 +14,12 @@ export class AppConfigService {
   ) {}
 
   get port() {
+    // HTTP 服务监听端口，main.ts 会读取它启动 Nest 应用。
     return this.configService.get("PORT", { infer: true });
   }
 
   get appOrigin() {
+    // CORS 白名单来源，默认对应前端 Vite dev server。
     return this.configService.get("APP_ORIGIN", { infer: true });
   }
 
@@ -26,6 +28,7 @@ export class AppConfigService {
   }
 
   get databaseConfigured() {
+    // health 接口用它区分“未配置数据库”和“数据库连接失败”。
     return Boolean(this.databaseUrl);
   }
 
@@ -46,6 +49,7 @@ export class AppConfigService {
   }
 
   get openAiTokenCountApiKey() {
+    // token 计数可以单独配置 key；没配时复用主模型 key。
     return (
       this.configService.get("OPENAI_TOKEN_COUNT_API_KEY", { infer: true })
       ?? this.openAiApiKey
@@ -76,6 +80,7 @@ export class AppConfigService {
   }
 
   get amapMapsMcpConfigured() {
+    // 地图 MCP 只有在显式启用且提供 API key 时才加入 SkillCatalog。
     return this.amapMapsMcpEnabled && Boolean(this.amapMapsApiKey);
   }
 
@@ -116,6 +121,7 @@ export class AppConfigService {
       infer: true,
     });
 
+    // Docker 工具读取工作区时挂载这个目录；默认从 apps/server 回到仓库根。
     return resolve(configuredRoot ?? resolve(process.cwd(), "..", ".."));
   }
 
@@ -128,6 +134,7 @@ export class AppConfigService {
   }
 
   get agentIntentModel() {
+    // 不同 Agent 角色可以使用不同模型；没有单独配置时使用保守默认值。
     return this.normalizeModelName(
       this.getOptionalModel("AGENT_INTENT_MODEL") ?? "gpt-5.4-mini",
     );
@@ -194,6 +201,7 @@ export class AppConfigService {
   }
 
   get providerConfigured() {
+    // 文本 Agent 执行依赖模型供应商；未配置时只允许不调用模型的占位/健康链路。
     return Boolean(this.openAiApiKey);
   }
 
@@ -225,6 +233,7 @@ export class AppConfigService {
   }
 
   private normalizeModelName(model: string) {
+    // 兼容 openai:gpt-x 这种 provider 前缀写法，传给 ChatOpenAI 时只保留模型名。
     return model.startsWith("openai:") ? model.slice("openai:".length) : model;
   }
 }

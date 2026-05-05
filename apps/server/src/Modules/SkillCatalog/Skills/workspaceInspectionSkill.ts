@@ -6,6 +6,7 @@ import { createRunPythonInDockerTool } from "../Tools/runPythonInDockerTool.js";
 export const createWorkspaceInspectionSkill = (
   dockerScriptRunner: DockerScriptRunnerService,
 ): AgentSkillDefinition => ({
+  // workspace-inspection 使用只读工作区挂载，适合扫描仓库但不修改文件。
   category: "project",
   categoryLabel: "工作区扫描",
   description:

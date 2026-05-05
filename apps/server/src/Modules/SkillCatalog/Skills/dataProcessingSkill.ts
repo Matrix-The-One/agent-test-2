@@ -6,6 +6,7 @@ import { createRunPythonInDockerTool } from "../Tools/runPythonInDockerTool.js";
 export const createDataProcessingSkill = (
   dockerScriptRunner: DockerScriptRunnerService,
 ): AgentSkillDefinition => ({
+  // 数据处理复用 Docker JS/Python 工具，适合确定性解析、统计和格式转换。
   category: "engineering",
   categoryLabel: "数据处理",
   description:

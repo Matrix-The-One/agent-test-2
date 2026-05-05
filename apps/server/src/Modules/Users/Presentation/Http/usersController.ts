@@ -26,6 +26,7 @@ export class UsersController {
     @Body(new ZodValidationPipe(ensureUserRequestSchema))
     body: EnsureUserRequestDto,
   ) {
+    // 前端用这个接口创建或刷新本地用户记录。
     return this.userService.ensureUser(body);
   }
 
@@ -36,6 +37,7 @@ export class UsersController {
     @Param(new ZodValidationPipe(userIdParamSchema))
     params: UserIdParamDto,
   ) {
+    // 会话页面可用它确认当前 userId 是否存在。
     return this.userService.getUserById(params.userId);
   }
 }

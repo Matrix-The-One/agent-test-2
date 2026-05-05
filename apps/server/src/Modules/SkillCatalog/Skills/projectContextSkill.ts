@@ -3,6 +3,7 @@ import { createGetCurrentTimeTool } from "../Tools/getCurrentTimeTool.js";
 import type { AgentSkillDefinition } from "../Domain/agentSkillTypes.js";
 
 export const createProjectContextSkill = (): AgentSkillDefinition => ({
+  // project-context 是 core skill，用于回答项目事实、技术栈和当前时间等基础问题。
   category: "project",
   categoryLabel: "项目上下文",
   description: "用于查询仓库上下文、技术栈和当前时间等基础环境信息。",

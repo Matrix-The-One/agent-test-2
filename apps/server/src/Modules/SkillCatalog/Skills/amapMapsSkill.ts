@@ -5,6 +5,7 @@ import type { AgentSkillDefinition } from "../Domain/agentSkillTypes.js";
 export const createAmapMapsSkill = (
   tools: StructuredToolInterface[],
 ): AgentSkillDefinition => ({
+  // 这个 skill 只有在 AmapMcpService 成功加载 MCP tools 后才会注册。
   category: "location",
   categoryLabel: "地图与位置",
   description:

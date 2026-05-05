@@ -7,6 +7,8 @@ import { RecognizeIntentNode } from "../LangGraph/Nodes/recognizeIntentNode.js";
 import { ResolveImageRoleNode } from "../LangGraph/Nodes/resolveImageRoleNode.js";
 import { ResolveIntentSkillsNode } from "../LangGraph/Nodes/resolveIntentSkillsNode.js";
 
+// 第一层 LangGraph：只做前置路由，不生成最终回答。
+// 顺序是 图片角色 -> 顶层意图 -> 技能选择；image 意图会提前 END。
 const buildAgentWorkflowGraph = (
   resolveImageRoleNode: ResolveImageRoleNode,
   recognizeIntentNode: RecognizeIntentNode,
@@ -14,6 +16,7 @@ const buildAgentWorkflowGraph = (
   afterIntentEdge: AfterIntentEdge,
 ) =>
   new StateGraph(agentWorkflowStateSchema)
+    // 节点只返回局部 state patch，LangGraph 会合并回完整 workflow state。
     .addNode("resolveImageRole", (state, config) =>
       resolveImageRoleNode.run(state, config),
     )
@@ -25,6 +28,7 @@ const buildAgentWorkflowGraph = (
     )
     .addEdge(START, "resolveImageRole")
     .addEdge("resolveImageRole", "recognizeIntent")
+    // image 目前没有真实图片模型，路由到 END 后由 AgentService 返回占位说明。
     .addConditionalEdges(
       "recognizeIntent",
       (state) => afterIntentEdge.next(state),
@@ -52,6 +56,7 @@ export class AgentWorkflowGraphFactory {
   private graph?: AgentWorkflowGraph;
 
   createGraph() {
+    // 路由图没有请求级可变状态，可以在 Factory 内缓存编译结果。
     this.graph ??= buildAgentWorkflowGraph(
       this.resolveImageRoleNode,
       this.recognizeIntentNode,

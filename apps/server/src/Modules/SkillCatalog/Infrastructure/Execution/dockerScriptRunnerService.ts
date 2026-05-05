@@ -8,6 +8,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { AppConfigService } from "../../../../Config/appConfigService.js";
 
+// Docker tool 的安全基线：无网络、只读 rootfs、低权限用户、限制 CPU/内存/PID。
 const DOCKER_TMPFS_MOUNT = "/tmp:rw,noexec,nosuid,size=64m";
 const EMPTY_OUTPUT_LABEL = "(empty)";
 const MAX_SCRIPT_ARGS = 8;
@@ -44,6 +45,7 @@ export type DockerScriptRunInput = {
 };
 
 const formatOutput = (value: string) => {
+  // tool 输出中显式标记空输出，避免模型误以为字段缺失。
   const normalizedValue = value.trim();
 
   return normalizedValue.length > 0 ? normalizedValue : EMPTY_OUTPUT_LABEL;
@@ -58,6 +60,7 @@ const appendOutputChunk = ({
   maxChars: number;
   nextChunk: Buffer;
 }) => {
+  // stdout/stderr 都有最大长度，防止脚本输出过大撑爆上下文。
   if (current.length >= maxChars) {
     return {
       next: current,
@@ -95,6 +98,7 @@ export class DockerScriptRunnerService {
   }
 
   async runScript(input: DockerScriptRunInput): Promise<DockerScriptRunResult> {
+    // runScript 是 JS/Python Docker 工具的统一执行入口。
     const startedAtMs = Date.now();
     const timeoutMs = Math.min(
       input.timeoutMs ?? this.config.agentDockerTimeoutMs,
@@ -103,6 +107,7 @@ export class DockerScriptRunnerService {
     const workspaceAccess = input.workspaceAccess ?? "none";
 
     if (!this.config.dockerConfigured) {
+      // Docker 默认关闭；tool 返回 unavailable，而不是让 Agent 请求失败。
       return {
         durationMs: Date.now() - startedAtMs,
         exitCode: null,
@@ -122,6 +127,7 @@ export class DockerScriptRunnerService {
       workspaceAccess === "read" ? await this.resolveWorkspaceRoot() : undefined;
 
     if (workspaceAccess === "read" && !workspaceRoot) {
+      // 只读工作区挂载失败时不执行脚本，避免模型误以为能访问仓库。
       return {
         durationMs: Date.now() - startedAtMs,
         exitCode: null,
@@ -142,6 +148,7 @@ export class DockerScriptRunnerService {
     const entryFileName = input.language === "javascript" ? "main.mjs" : "main.py";
 
     try {
+      // 先把脚本写入临时目录，再以只读 bind mount 方式交给容器执行。
       await writeFile(join(jobDirectory, entryFileName), input.script, "utf8");
 
       return await this.executeDockerRun({
@@ -187,6 +194,7 @@ export class DockerScriptRunnerService {
     workspaceAccess: DockerWorkspaceAccess;
     workspaceRoot?: string;
   }): Promise<DockerScriptRunResult> {
+    // docker run 参数集中体现隔离策略：无网络、只读、去 capability、资源限制、非 root。
     const dockerArgs = [
       "run",
       "--rm",
@@ -255,11 +263,13 @@ export class DockerScriptRunnerService {
       };
 
       const child = spawn(this.config.dockerBin, dockerArgs, {
+        // 不走 shell，避免脚本内容影响命令行解析。
         shell: false,
         windowsHide: true,
       });
 
       timeoutHandle = setTimeout(() => {
+        // 超时后杀进程并强制删除容器，避免残留执行环境。
         timedOut = true;
         child.kill();
         void this.forceRemoveContainer(containerName);
@@ -322,6 +332,7 @@ export class DockerScriptRunnerService {
   }
 
   private async resolveWorkspaceRoot() {
+    // workspaceAccess=read 时才解析并检查工作区目录。
     try {
       const workspaceRoot = this.config.agentDockerWorkspaceRoot;
       const workspaceRootStat = await stat(workspaceRoot);
@@ -343,6 +354,7 @@ export class DockerScriptRunnerService {
   }
 
   private async forceRemoveContainer(containerName: string) {
+    // 超时清理使用独立 docker rm -f，失败也不再向上抛，主结果已标记 timeout。
     await new Promise<void>((resolve) => {
       const cleanupProcess = spawn(
         this.config.dockerBin,
@@ -361,6 +373,7 @@ export class DockerScriptRunnerService {
 }
 
 export const formatDockerScriptRunResult = (result: DockerScriptRunResult) =>
+  // tool 返回给模型的是结构化文本，便于 supervisor/specialist 读取 stdout/stderr 和状态。
   [
     "Docker script execution result",
     `Language: ${result.language}`,

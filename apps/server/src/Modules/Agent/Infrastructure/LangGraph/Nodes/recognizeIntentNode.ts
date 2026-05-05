@@ -14,6 +14,7 @@ export class RecognizeIntentNode {
       signal?: AbortSignal;
     },
   ) {
+    // 读取上游 resolveImageRole 写入的 hasImages/imageRole，再判断顶层意图。
     const decision = await this.intentService.recognize({
       hasImages: state.hasImages,
       imageRole: state.imageRole,
@@ -23,6 +24,7 @@ export class RecognizeIntentNode {
     });
 
     return {
+      // 返回局部 patch，LangGraph 会把它合并进 workflow state。
       intent: decision.intent,
       intentReason: decision.reason,
     };

@@ -10,6 +10,7 @@ import type { User } from "../../../../generated/prisma/client.js";
 import type { UserRecord } from "../../Domain/userTypes.js";
 
 const mapUserRecord = (record: User): UserRecord => ({
+  // Repository 层统一把 Prisma Date 转成 ISO string，前端类型保持稳定。
   createdAt: record.createdAt.toISOString(),
   displayName: record.displayName,
   ...(record.email ? { email: record.email } : {}),
@@ -33,6 +34,7 @@ export class UserRepository {
     session: PrismaSession = this.prisma,
   ) {
     const id = input.id ?? randomUUID();
+    // ensure 语义：id 存在则更新基础资料，不存在则创建。
     const record = await session.user.upsert({
       create: {
         displayName: input.displayName,
@@ -52,6 +54,7 @@ export class UserRepository {
   }
 
   async findById(id: string, session: PrismaSession = this.prisma) {
+    // 所有按用户归属查询的上游逻辑最终依赖这个 404 保护。
     const record = await session.user.findUnique({
       where: {
         id,

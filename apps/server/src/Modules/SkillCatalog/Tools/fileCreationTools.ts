@@ -7,6 +7,7 @@ import {
   formatFileCreationError,
 } from "../Infrastructure/Files/fileCreationService.js";
 
+// LangChain tool schema 约束模型能创建的文件路径、内容长度和格式。
 const relativePathSchema = z.string().trim().min(1).max(240);
 const overwriteSchema = z.boolean().default(false);
 const longTextSchema = z.string().trim().min(1).max(50000);
@@ -53,6 +54,7 @@ const createTextFileTool = ({
       input: { overwrite?: boolean; relativePath: string } & Record<string, string>,
     ) => {
       try {
+        // payloadKey 让 md/js/py 等文本工具复用同一个创建逻辑，但字段名更贴近内容类型。
         const content = input[payloadKey];
 
         return formatCreatedFileResult(
@@ -70,6 +72,7 @@ const createTextFileTool = ({
     {
       description,
       name,
+      // schema 是暴露给模型的工具调用契约。
       schema: z.object({
         [payloadKey]: longTextSchema,
         overwrite: overwriteSchema,
@@ -122,6 +125,7 @@ export const createDocxFileTool = (service: FileCreationService) =>
   tool(
     async ({ blocks, overwrite, relativePath }) => {
       try {
+        // docx 走结构化 blocks，模型需要显式给出标题、段落和 bullet。
         return formatCreatedFileResult(
           await service.createDocxFile({
             blocks,
@@ -149,6 +153,7 @@ export const createXlsxFileTool = (service: FileCreationService) =>
   tool(
     async ({ overwrite, relativePath, sheets }) => {
       try {
+        // xlsx 工具直接接收工作表和二维行数据，支持简单公式单元格。
         return formatCreatedFileResult(
           await service.createXlsxFile({
             overwrite,

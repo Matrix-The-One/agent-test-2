@@ -14,6 +14,7 @@ const agentImageInputSchema = z.object({
 });
 
 export const agentWorkflowStateSchema = z.object({
+  // LangGraph 第一层路由图共享这份 state；每个 node 只返回自己负责更新的字段。
   hasImages: z.boolean().default(false),
   imageRole: z.enum(AGENT_IMAGE_ROLES).default("none"),
   imageRoleReason: z.string().default(""),
@@ -25,6 +26,7 @@ export const agentWorkflowStateSchema = z.object({
   intentReason: z.string().default(""),
   skillSelection: z
     .object({
+      // skillSelection 是第一层图的最终路由结果，AgentService 会据此加载 SkillCatalog。
       reason: z.string(),
       skillIds: z.array(agentSkillIdSchema).max(MAX_ROUTED_AGENT_SKILLS),
     })

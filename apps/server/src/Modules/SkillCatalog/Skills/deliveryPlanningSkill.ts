@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { AgentSkillDefinition } from "../Domain/agentSkillTypes.js";
 
 const createDeliveryPlanTool = () =>
+  // 交付计划工具输出阶段化任务拆分，供 delivery specialist 进一步综合。
   tool(
     async ({ scope, timeline }: { scope: string; timeline: string }) =>
       [
@@ -26,6 +27,7 @@ const createDeliveryPlanTool = () =>
   );
 
 export const createDeliveryPlanningSkill = (): AgentSkillDefinition => ({
+  // delivery category 在 coding fixed-chain 中用于补充实施顺序和风险节点。
   category: "delivery",
   categoryLabel: "交付规划",
   description: "用于特性拆解、阶段排期、任务切分和里程碑规划。",

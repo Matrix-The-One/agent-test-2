@@ -12,6 +12,8 @@ import type {
 } from "../../Domain/agentTypes.js";
 import { AGENT_INTENTS } from "../../Domain/agentTypes.js";
 
+// 顶层意图识别采用“规则优先、模型兜底”的策略。
+// 明确命中关键词时避免调用模型，模糊场景再交给结构化模型判断。
 const imageOutputKeywords = [
   "画一张",
   "生成一张",
@@ -120,6 +122,7 @@ const intentRouterSchema = z.object({
   reason: z.string().trim().min(1).max(200),
 });
 
+// 模型只负责在 chat/writing/coding/image 中选一个，不直接生成回复。
 const INTENT_ROUTER_SYSTEM_PROMPT = `
 你是 Agent 的顶层意图路由器。
 你只能从 chat, writing, coding, image 四个意图里选择一个。
@@ -172,6 +175,7 @@ export class AgentIntentService {
     requestedMode?: AgentRequestMode;
     signal?: AbortSignal;
   }): Promise<AgentIntentDecision> {
+    // 前端显式指定 mode 时尊重用户选择，不再自动推断。
     if (requestedMode) {
       return {
         intent: requestedMode,
@@ -179,6 +183,7 @@ export class AgentIntentService {
       };
     }
 
+    // 先跑确定性规则，能确定就直接返回。
     const normalizedMessage = message.trim().toLowerCase();
     const ruleResult = this.recognizeByRules({
       hasImages,
@@ -190,6 +195,7 @@ export class AgentIntentService {
       return ruleResult.decision;
     }
 
+    // 规则判断为模糊但模型不可用时，仍要给出可执行的回退结果。
     if (!this.config.providerConfigured) {
       return {
         ...ruleResult.decision,
@@ -197,6 +203,7 @@ export class AgentIntentService {
       };
     }
 
+    // 模型识别失败时不让整条请求失败，而是回退到规则结果。
     const modelDecision = await this.recognizeByModel({
       hasImages,
       imageRole,
@@ -231,6 +238,7 @@ export class AgentIntentService {
   }): IntentRuleResult {
     const matches: AgentIntentDecision[] = [];
 
+    // 明确改图时直接进入 image 意图，不再让文本关键词干扰。
     if (imageRole === "edit") {
       return {
         decision: {
@@ -269,6 +277,7 @@ export class AgentIntentService {
       };
     }
 
+    // 多个强规则同时命中时才需要模型裁决，例如“写代码生成海报配置”。
     if (matches.length > 1) {
       return {
         decision: {
@@ -279,6 +288,7 @@ export class AgentIntentService {
       };
     }
 
+    // 没有文本时，空请求已在 Zod 层拦截；这里主要处理纯图片请求。
     if (!message) {
       return {
         decision: {
@@ -321,6 +331,7 @@ export class AgentIntentService {
     hasImages: boolean;
     message: string;
   }) {
+    // 文本越长、图片上下文越复杂，越值得交给模型做一次结构化判断。
     if (hasImages && message.length >= 4) {
       return true;
     }
@@ -343,6 +354,7 @@ export class AgentIntentService {
     message: string;
     signal?: AbortSignal;
   }): Promise<AgentIntentDecision> {
+    // withStructuredOutput 让模型输出经过 Zod schema 收窄，避免解析自由文本。
     const structuredModel = this.modelFactory
       .createIntentModel()
       .withStructuredOutput(intentRouterSchema);
@@ -368,6 +380,7 @@ export class AgentIntentService {
     imageRole: AgentImageRole;
     message: string;
   }) {
+    // 给模型的输入保持短小，只包含路由所需事实。
     return [
       "请判断下面请求的顶层意图:",
       `- hasImages: ${hasImages ? "true" : "false"}`,

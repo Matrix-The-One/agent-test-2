@@ -14,6 +14,7 @@ export class ResolveIntentSkillsNode {
       signal?: AbortSignal;
     },
   ) {
+    // 根据已经识别出的 intent/imageRole 选择后续第二层 Agent 图要加载的 skills。
     return {
       skillSelection: this.intentSkillService.resolve({
         hasImages: state.hasImages,

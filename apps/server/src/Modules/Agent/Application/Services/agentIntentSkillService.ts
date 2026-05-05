@@ -8,6 +8,8 @@ import type {
   AgentWorkflowSkillSelection,
 } from "../../Domain/agentTypes.js";
 
+// skill 路由是规则型：根据 intent 和关键词挑选后续 specialist/tools。
+// 这里不直接执行 skill，只返回 skillIds 给 AgentService 解析。
 const containsAny = (message: string, keywords: readonly string[]) =>
   keywords.some((keyword) => message.includes(keyword));
 
@@ -81,6 +83,7 @@ export class AgentIntentSkillService {
     const skillIds: AgentSkillId[] = [];
 
     if (intent === "chat") {
+      // chat 默认可以直接回答；只有命中特定能力关键词时才额外挂 skill。
       if (
         containsAny(normalizedMessage, [
           "项目",
@@ -182,6 +185,7 @@ export class AgentIntentSkillService {
     }
 
     if (intent === "writing") {
+      // writing 走固定写作链路：内容生成 -> 文档结构；显式文件需求再补 artifact。
       skillIds.push("content-creation");
       skillIds.push("document-production");
 
@@ -199,6 +203,7 @@ export class AgentIntentSkillService {
     }
 
     if (intent === "coding") {
+      // coding 默认带工程实现和质量检查，保证最终回答有实现和风险兜底。
       skillIds.push("code-engineering");
       skillIds.push("quality-guard");
 
@@ -296,12 +301,14 @@ export class AgentIntentSkillService {
     }
 
     return {
+      // image 当前由 AgentService 返回占位文本，不进入文本 specialist 执行。
       reason: "image 意图当前不挂载文本 skill。",
       skillIds: [],
     };
   }
 
   private deduplicate(skillIds: readonly AgentSkillId[]): AgentSkillId[] {
+    // 同一个 skill 可能被多个关键词命中，最终只保留一次。
     return Array.from(new Set(skillIds));
   }
 }

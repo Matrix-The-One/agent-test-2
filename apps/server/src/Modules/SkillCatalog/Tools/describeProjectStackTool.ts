@@ -7,6 +7,7 @@ const formatStack = (label: string, items: readonly string[]) =>
   `${label}: ${items.join(" / ")}`;
 
 export const createDescribeProjectStackTool = () =>
+  // 给 project specialist 提供稳定的项目技术栈事实，避免模型凭空猜测。
   tool(
     async ({ focus }: { focus: "all" | "frontend" | "backend" }) => {
       if (focus === "frontend") {

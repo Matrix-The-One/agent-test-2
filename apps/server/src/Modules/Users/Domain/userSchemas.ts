@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// 用户接口的运行时校验 schema；空 email 会被当成 undefined。
 export const ensureUserRequestSchema = z.object({
   displayName: z.string().trim().min(1).max(120).default("Local User"),
   email: z

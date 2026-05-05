@@ -3,9 +3,11 @@ import { resolve } from "node:path";
 import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
 
+// dotenv 里常见空字符串，这里统一当成 undefined，让 optional schema 正常生效。
 const emptyStringAsUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
 
+// 支持 DOCKER_ENABLED=true/1/on 等写法，避免环境变量布尔值只能写 true/false。
 const parseBooleanish = (value: unknown) => {
   if (typeof value === "boolean") {
     return value;
@@ -34,6 +36,7 @@ const optionalModelSchema = () =>
 const booleanishSchema = () => z.preprocess(parseBooleanish, z.boolean());
 
 const loadOptionalEnvFile = (path: string) => {
+  // .env.agent/.env 都是可选文件；只有非 ENOENT 的读取错误才应中断启动。
   const dotenvResult = loadDotenv({
     path,
   });
@@ -49,7 +52,7 @@ const loadOptionalEnvFile = (path: string) => {
 export const serverAgentEnvFilePath = resolve(process.cwd(), ".env.agent");
 export const serverEnvFilePath = resolve(process.cwd(), ".env");
 
-// Load the more specific agent env first; .env fills the remaining app defaults.
+// 先加载更具体的模型/Agent 配置，再加载通用运行配置。
 for (const envFilePath of [
   serverAgentEnvFilePath,
   serverEnvFilePath,
@@ -57,6 +60,7 @@ for (const envFilePath of [
   loadOptionalEnvFile(envFilePath);
 }
 
+// 服务端所有运行时配置都在这里声明和校验；新增 env 时优先补这个 schema。
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3001),

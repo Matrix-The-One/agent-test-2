@@ -1,3 +1,4 @@
+// 项目上下文和运行能力的静态事实，供 project-context skill 的工具返回给模型。
 export const STACK_SUMMARY = {
   backend: ["TypeScript", "NestJS", "LangChain", "LangGraph", "dotenv", "zod"],
   frontend: [
@@ -10,6 +11,7 @@ export const STACK_SUMMARY = {
   ],
 } as const;
 
+// 这些能力描述帮助 Agent 在回答“当前项目能做什么”时使用稳定事实，而不是凭空推断。
 export const RUNTIME_CAPABILITIES = [
   "服务端按 NestJS feature modules 组织: Health / Agent / SkillCatalog",
   "Agent 请求先做图片角色识别, 再做顶层意图识别和技能路由",
@@ -20,6 +22,7 @@ export const RUNTIME_CAPABILITIES = [
   "前端通过 AI SDK UI 的流式协议接收消息",
 ] as const;
 
+// 上下文窗口相关常量：控制长对话摘要、最近消息保留和压缩尝试次数。
 export const MAX_PERSISTED_CONVERSATION_MESSAGES = 24;
 export const AGENT_CONTEXT_RECENT_MESSAGES_TO_KEEP = 8;
 export const AGENT_CONTEXT_MIN_RECENT_MESSAGES_TO_KEEP = 4;

@@ -13,6 +13,7 @@ import {
 
 type OpenApiSchema = Record<string, unknown>;
 
+// Swagger 中展示的错误响应 DTO，对应 HttpExceptionFilter 输出的 envelope。
 export class ApiErrorResponseDto {
   @ApiProperty({ example: false, type: Boolean })
   success!: false;
@@ -49,6 +50,7 @@ export class ApiErrorResponseDto {
 }
 
 const buildEnvelopeSchema = (dataSchema: OpenApiSchema): OpenApiSchema => ({
+  // 普通 API 实际返回 { success, data, errorMsg, ... }，这里手写 schema 保持文档一致。
   properties: {
     data: {
       ...dataSchema,
@@ -103,6 +105,7 @@ export const ApiEnvelopeResponse = (
     status?: 200 | 201;
   },
 ) => {
+  // 给 Controller 方法一键挂上成功响应和常见错误响应，减少每个接口重复写 Swagger decorator。
   const responseDecorator =
     options?.status === 201 ? ApiCreatedResponse : ApiOkResponse;
 

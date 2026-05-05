@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 import { AGENT_INTENTS } from "../../../Agent/Domain/agentTypes.js";
 
+// 会话 HTTP DTO 只用于 OpenAPI 文档；运行时入参由 conversationSchemas.ts 校验。
 export class CreateConversationRequestDto {
   @ApiPropertyOptional({ format: "uuid", type: String })
   id?: string;

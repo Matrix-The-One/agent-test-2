@@ -6,6 +6,7 @@ import { createRunPythonInDockerTool } from "../Tools/runPythonInDockerTool.js";
 export const createRuntimeVerificationSkill = (
   dockerScriptRunner: DockerScriptRunnerService,
 ): AgentSkillDefinition => ({
+  // runtime-verification 提供确定性脚本执行能力，不用于任意 shell 操作。
   category: "engineering",
   categoryLabel: "运行时验证",
   description:

@@ -18,6 +18,7 @@ import type {
 
 const DEFAULT_CONVERSATION_LIST_LIMIT = 20;
 
+// 数据库存的是普通 string，这里只把合法 Agent mode 暴露给上层类型。
 const isAgentRequestMode = (
   value: string | null,
 ): value is AgentRequestMode =>
@@ -31,6 +32,7 @@ const mapConversationRecord = (
   >,
   messageCount = 0,
 ): ConversationRecord => ({
+  // Repository 统一把 Date 转成 ISO string，避免 Controller/前端再处理 Date 序列化差异。
   createdAt: record.createdAt.toISOString(),
   id: record.id,
   messageCount,
@@ -59,6 +61,7 @@ export class ConversationRepository {
     session: PrismaSession = this.prisma,
   ) {
     const id = input.id ?? randomUUID();
+    // Agent 流式请求会先由前端生成 threadId；upsert 可以同时支持“首次创建”和“继续对话”。
     const record = await session.conversation.upsert({
       create: {
         id,
@@ -87,6 +90,7 @@ export class ConversationRepository {
     },
     session: PrismaSession = this.prisma,
   ) {
+    // 所有写入都按 conversationId + userId 校验，避免跨用户访问。
     const existingRecord = await session.conversation.findFirst({
       where: {
         id: input.conversationId,
@@ -103,6 +107,7 @@ export class ConversationRepository {
     const record = await session.conversation.update({
       data: {
         ...(input.mode ? { selectedMode: input.mode } : {}),
+        // 自动标题只在默认“新聊天”时写入，避免覆盖用户手动重命名。
         ...(input.title && existingRecord.title === "新聊天"
           ? { title: input.title }
           : {}),
@@ -120,6 +125,7 @@ export class ConversationRepository {
     userId: string,
     session: PrismaSession = this.prisma,
   ) {
+    // 这是会话归属校验的公共入口：找不到时直接抛 404。
     const record = await session.conversation.findFirst({
       where: {
         id: conversationId,
@@ -145,12 +151,14 @@ export class ConversationRepository {
     } = {},
   ): Promise<ConversationListResult> {
     const take = options.limit ?? DEFAULT_CONVERSATION_LIST_LIMIT;
+    // 侧边栏分页：按 updatedAt 倒序展示最近对话，多取一条用于判断是否还有下一页。
     const records = await this.prisma.conversation.findMany({
       include: {
         _count: {
           select: {
             messages: {
               where: {
+                // system 消息只用于上下文摘要，不算进用户可见消息数。
                 role: {
                   not: "system",
                 },
@@ -205,6 +213,7 @@ export class ConversationRepository {
     },
     session: PrismaSession = this.prisma,
   ) {
+    // 用户主动更新会话标题/mode 时走这里，允许覆盖已有标题。
     await this.findByIdForUser(input.conversationId, input.userId, session);
 
     const record = await session.conversation.update({
@@ -220,6 +229,7 @@ export class ConversationRepository {
     const messageCount = await session.message.count({
       where: {
         conversationId: input.conversationId,
+        // 返回给前端的 messageCount 只统计用户可见消息。
         role: {
           not: "system",
         },
@@ -234,6 +244,7 @@ export class ConversationRepository {
     userId: string,
     session: PrismaSession = this.prisma,
   ) {
+    // 删除前先做归属校验；Message 通过 schema 中的 onDelete: Cascade 自动删除。
     await this.findByIdForUser(conversationId, userId, session);
 
     await session.conversation.delete({

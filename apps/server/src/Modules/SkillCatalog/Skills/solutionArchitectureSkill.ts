@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { AgentSkillDefinition } from "../Domain/agentSkillTypes.js";
 
 const createArchitectureChecklistTool = () =>
+  // 架构清单工具帮助 architecture specialist 聚焦边界、依赖和取舍。
   tool(
     async ({
       constraints,
@@ -32,6 +33,7 @@ const createArchitectureChecklistTool = () =>
   );
 
 export const createSolutionArchitectureSkill = (): AgentSkillDefinition => ({
+  // architecture category 在 coding 任务涉及模块划分/设计时加入 fixed-chain。
   category: "architecture",
   categoryLabel: "架构设计",
   description: "用于模块划分、目录结构调整、分层约束和系统设计取舍分析。",
