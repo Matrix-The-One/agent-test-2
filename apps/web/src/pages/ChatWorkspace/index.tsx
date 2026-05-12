@@ -24,6 +24,8 @@ export const ChatWorkspacePage = () => {
     : undefined;
   const helperText = workspace.awaitingClarification
     ? "Agent 正在等待你补充关键上下文。"
+    : workspace.awaitingSkillChoice
+      ? "请选择上方方案，Agent 会在当前回复中继续执行。"
     : activeModeOption
       ? activeModeOption.helperText
     : workspace.lastAssistantText
@@ -31,6 +33,8 @@ export const ChatWorkspacePage = () => {
       : "输入一个需求，直接验证新的工作台布局与流式响应。";
   const composerErrorMessage = workspace.error?.message
     ? `请求失败：${workspace.error.message}`
+    : workspace.skillChoiceSubmitError
+      ? `方案提交失败：${workspace.skillChoiceSubmitError}`
     : undefined;
 
   useEffect(() => {
@@ -133,7 +137,9 @@ export const ChatWorkspacePage = () => {
                   onScrollingChange={workspace.setStreamingRenderPaused}
                   onDraftSuggestion={workspace.handleClarificationDraft}
                   onSendSuggestion={workspace.handleClarificationSuggestion}
+                  onSkillChoiceSelect={workspace.handleSkillChoiceSelect}
                   status={workspace.status}
+                  submittingSkillChoiceId={workspace.submittingSkillChoiceId}
                 />
               )}
             {isComposerFullscreen ? null : (

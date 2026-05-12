@@ -21,6 +21,7 @@ import {
   getClarificationMetadata,
   getMessageImageFiles,
   getMessageText,
+  getSkillChoiceMetadata,
 } from "@/utils/chat/messageUtils";
 import {
   CHAT_AGENT_TOKEN_COUNTING_MODE_LABELS,
@@ -29,9 +30,12 @@ import {
   type ChatAgentTraceExecutionMode,
   type ChatAgentTraceStepStatus,
   type ChatMessage,
+  type ChatSkillChoiceMetadata,
+  type ChatSkillChoiceOption,
 } from "@/store/chat/types";
 
 import { ClarificationCard } from "./ClarificationCard";
+import { SkillChoiceCard } from "./SkillChoiceCard";
 
 const AUTO_SCROLL_BOTTOM_THRESHOLD_PX = 80;
 const PROGRAMMATIC_SCROLL_RESET_MS = 120;
@@ -154,7 +158,12 @@ type ChatMessageListProps = {
   onScrollingChange?: (isScrolling: boolean) => void;
   onDraftSuggestion: (suggestion: string) => void;
   onSendSuggestion: (suggestion: string) => Promise<void>;
+  onSkillChoiceSelect: (
+    choice: ChatSkillChoiceMetadata,
+    option: ChatSkillChoiceOption,
+  ) => Promise<void>;
   status: string;
+  submittingSkillChoiceId: string | null;
 };
 
 export const ChatMessageList = ({
@@ -163,7 +172,9 @@ export const ChatMessageList = ({
   onScrollingChange,
   onDraftSuggestion,
   onSendSuggestion,
+  onSkillChoiceSelect,
   status,
+  submittingSkillChoiceId,
 }: ChatMessageListProps) => {
   const displayMessages = useMemo(() => mergeDisplayMessages(messages), [messages]);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -342,10 +353,12 @@ export const ChatMessageList = ({
             const text = getMessageText(message);
             const imageFiles = getMessageImageFiles(message);
             const clarification = getClarificationMetadata(message);
+            const skillChoice = getSkillChoiceMetadata(message);
             const agentTrace = getAgentTrace(message);
             const isPendingAssistantMessage = message.role === "assistant"
               && !text
               && !clarification
+              && !skillChoice
               && !agentTrace
               && imageFiles.length === 0
               && (status === "submitted" || status === "streaming");
@@ -354,6 +367,7 @@ export const ChatMessageList = ({
             if (
               !text
               && !clarification
+              && !skillChoice
               && !agentTrace
               && imageFiles.length === 0
               && !isPendingAssistantMessage
@@ -407,11 +421,23 @@ export const ChatMessageList = ({
                         <AssistantLoadingIndicator />
                       ) : (
                         <>
-                          {text ? (
-                            <AssistantMarkdown
-                              isAnimating={isActiveStreamingMessage}
-                              text={text}
+                          {skillChoice ? (
+                            <SkillChoiceCard
+                              canSelect={Boolean(skillChoice.choiceId)
+                                && isActiveStreamingMessage
+                                && (skillChoice.status ?? "pending") === "pending"}
+                              choice={skillChoice}
+                              isSubmitting={submittingSkillChoiceId === skillChoice.choiceId}
+                              onSelect={onSkillChoiceSelect}
                             />
+                          ) : null}
+                          {text ? (
+                            <div className={skillChoice ? "mt-4" : undefined}>
+                              <AssistantMarkdown
+                                isAnimating={isActiveStreamingMessage}
+                                text={text}
+                              />
+                            </div>
                           ) : null}
                           {agentTrace ? (
                             <AgentTracePanel
@@ -419,7 +445,10 @@ export const ChatMessageList = ({
                               trace={agentTrace}
                             />
                           ) : null}
-                          {!text && agentTrace && isActiveStreamingMessage ? (
+                          {!text
+                          && isActiveStreamingMessage
+                          && (!skillChoice || (skillChoice.status ?? "pending") !== "pending")
+                          && (agentTrace || skillChoice) ? (
                             <div className="mt-4">
                               <AssistantLoadingIndicator />
                             </div>
@@ -718,6 +747,7 @@ const isTraceOnlyAssistantMessage = (message: ChatMessage) => {
     && Boolean(getAgentTracePart(message))
     && !getMessageText(message)
     && !getClarificationMetadata(message)
+    && !getSkillChoiceMetadata(message)
     && getMessageImageFiles(message).length === 0;
 };
 

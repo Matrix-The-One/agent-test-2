@@ -7,6 +7,7 @@ import { createDataProcessingSkill } from "../../Skills/dataProcessingSkill.js";
 import { createDeliveryPlanningSkill } from "../../Skills/deliveryPlanningSkill.js";
 import { createDocumentProductionSkill } from "../../Skills/documentProductionSkill.js";
 import { createFileCreationSkill } from "../../Skills/fileCreationSkill.js";
+import { createInteractiveDeliverySkill } from "../../Skills/interactiveDeliverySkill.js";
 import { createProjectContextSkill } from "../../Skills/projectContextSkill.js";
 import { createQualityGuardSkill } from "../../Skills/qualityGuardSkill.js";
 import { createRuntimeVerificationSkill } from "../../Skills/runtimeVerificationSkill.js";
@@ -78,6 +79,7 @@ export class AgentSkillsService {
       createWorkspaceInspectionSkill(this.dockerScriptRunner),
       createSolutionArchitectureSkill(),
       createDeliveryPlanningSkill(),
+      createInteractiveDeliverySkill(),
       createQualityGuardSkill(),
       createContentCreationSkill(),
       createFileCreationSkill(this.fileCreationService),

@@ -1,8 +1,17 @@
-import { Body, Controller, Inject, Post, Req, Res } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Inject,
+  Param,
+  Post,
+  Req,
+  Res,
+} from "@nestjs/common";
 import {
   ApiBody,
   ApiConsumes,
   ApiOkResponse,
+  ApiParam,
   ApiProduces,
   ApiTags,
 } from "@nestjs/swagger";
@@ -11,12 +20,21 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 
 import { RawResponse } from "../../../../Common/Decorators/rawResponse.js";
 import { ZodValidationPipe } from "../../../../Common/Pipes/zodValidationPipe.js";
+import { ApiEnvelopeResponse } from "../../../../Common/OpenApi/openApiResponse.js";
 import {
+  agentChoiceIdParamSchema,
   agentChatRequestSchema,
+  agentSkillChoiceSubmitSchema,
 } from "../../Domain/agentSchemas.js";
 import { createAbortError } from "../../Domain/agentAbort.js";
 import { AgentService } from "../../Application/Services/agentService.js";
-import { AgentChatRequestDto } from "./agentHttpDtos.js";
+import { AgentChoiceService } from "../../Application/Services/agentChoiceService.js";
+import {
+  AgentChatRequestDto,
+  AgentChoiceIdParamDto,
+  AgentSkillChoiceSubmitRequestDto,
+  AgentSkillChoiceSubmitResultDto,
+} from "./agentHttpDtos.js";
 
 const AGENT_SSE_HEARTBEAT_INTERVAL_MS = 15_000;
 
@@ -26,6 +44,9 @@ const AGENT_SSE_HEARTBEAT_INTERVAL_MS = 15_000;
 export class AgentController {
   @Inject(AgentService)
   private readonly agentService!: AgentService;
+
+  @Inject(AgentChoiceService)
+  private readonly agentChoiceService!: AgentChoiceService;
 
   private writeError(reply: FastifyReply, error: unknown) {
     const message = this.agentService.normalizeError(error);
@@ -142,5 +163,19 @@ export class AgentController {
       clearHeartbeat();
       this.writeError(reply, error);
     }
+  }
+
+  @Post("choices/:choiceId")
+  @ApiParam({ name: "choiceId", schema: { format: "uuid", type: "string" } })
+  @ApiBody({ type: AgentSkillChoiceSubmitRequestDto })
+  @ApiEnvelopeResponse(AgentSkillChoiceSubmitResultDto)
+  submitAgentSkillChoice(
+    @Param(new ZodValidationPipe(agentChoiceIdParamSchema))
+    params: AgentChoiceIdParamDto,
+    @Body(new ZodValidationPipe(agentSkillChoiceSubmitSchema))
+    body: AgentSkillChoiceSubmitRequestDto,
+  ) {
+    // 选择结果通过独立确认接口回到仍在等待的 SSE 请求，不再创建新的用户消息。
+    return this.agentChoiceService.submitChoice(params.choiceId, body);
   }
 }

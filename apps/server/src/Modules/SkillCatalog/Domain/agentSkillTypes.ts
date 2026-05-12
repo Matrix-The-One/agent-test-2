@@ -6,6 +6,7 @@ export const AGENT_SKILL_IDS = [
   "workspace-inspection",
   "solution-architecture",
   "delivery-planning",
+  "interactive-delivery",
   "quality-guard",
   "content-creation",
   "file-creation",

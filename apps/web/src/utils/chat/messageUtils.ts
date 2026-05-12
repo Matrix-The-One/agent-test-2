@@ -4,6 +4,7 @@ import type {
   PersistedConversationMessage,
   ChatAgentTrace,
   ChatMessage,
+  ChatSkillChoiceMetadata,
 } from "@/store/chat/types";
 
 export const getLatestUserMessageText = (
@@ -45,6 +46,16 @@ export const getClarificationMetadata = (message: ChatMessage | undefined) => {
   }
 
   return message.metadata?.kind === "clarification" ? message.metadata : null;
+};
+
+export const getSkillChoiceMetadata = (
+  message: ChatMessage | undefined,
+): ChatSkillChoiceMetadata | null => {
+  if (!message || message.role !== "assistant") {
+    return null;
+  }
+
+  return message.metadata?.kind === "skill-choice" ? message.metadata : null;
 };
 
 export const getAgentTrace = (

@@ -7,6 +7,7 @@ import {
   getConversationMessages as getConversationMessagesRequest,
   getHealth as getHealthRequest,
   listConversations as listConversationsRequest,
+  submitAgentSkillChoice as submitAgentSkillChoiceRequest,
   updateConversation as updateConversationRequest,
 } from "@/services/api/generated/endpoints";
 import type {
@@ -14,6 +15,7 @@ import type {
   ChatConversationRecord,
   HealthState,
   ChatUser,
+  ChatSkillChoiceRequest,
   PersistedConversationMessage,
 } from "@/store/chat/types";
 
@@ -149,4 +151,13 @@ export const deleteChatConversation = async (
 
 export const getHealthState = async () => {
   return request<HealthState>(getHealthRequest());
+};
+
+export const submitChatSkillChoice = async (
+  choiceId: string,
+  input: ChatSkillChoiceRequest,
+) => {
+  return request<{ accepted: boolean; choiceId: string }>(
+    submitAgentSkillChoiceRequest(choiceId, input),
+  );
 };

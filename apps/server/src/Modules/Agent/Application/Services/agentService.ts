@@ -16,10 +16,17 @@ import { ConversationService } from "../../../Conversations/Application/Services
 import type { ConversationMessageRecord } from "../../../Conversations/Domain/conversationTypes.js";
 import { AgentSkillsService } from "../../../SkillCatalog/Application/Services/agentSkillsService.js";
 import {
+  AgentChoiceService,
+  AgentChoiceTimeoutError,
+} from "./agentChoiceService.js";
+import {
   isAbortError,
   throwIfAborted,
 } from "../../Domain/agentAbort.js";
-import type { AgentChatRequest } from "../../Domain/agentSchemas.js";
+import type {
+  AgentChatRequest,
+  AgentSkillChoiceSubmitRequest,
+} from "../../Domain/agentSchemas.js";
 import type {
   AgentContextBudget,
   AgentExecutionPlan,
@@ -50,6 +57,8 @@ type PersistedAssistantPayload = {
   trace?: AgentExecutionTrace;
 };
 
+type SkillChoiceOptionId = "quick" | "balanced" | "deep";
+
 type AssistantStreamMessage = {
   metadata?: unknown;
   parts: Array<{
@@ -61,6 +70,7 @@ type AssistantStreamMessage = {
 const toIsoString = (value: number) => new Date(value).toISOString();
 const getDurationMs = (startedAt: string, completedAt: string) =>
   Math.max(0, Date.parse(completedAt) - Date.parse(startedAt));
+const INTERACTIVE_DELIVERY_SKILL_ID = "interactive-delivery";
 
 @Injectable()
 export class AgentService {
@@ -75,6 +85,9 @@ export class AgentService {
 
   @Inject(AgentSkillsService)
   private readonly agentSkillsService!: AgentSkillsService;
+
+  @Inject(AgentChoiceService)
+  private readonly agentChoiceService!: AgentChoiceService;
 
   @Inject(ConversationService)
   private readonly conversationService!: ConversationService;
@@ -102,6 +115,8 @@ export class AgentService {
 
     return createUIMessageStream({
       execute: async ({ writer }) => {
+        let effectiveMessage = payload.message;
+
         // 阶段 1：任何异步边界前都检查中断，避免用户停止后继续跑模型或写数据库。
         throwIfAborted(signal);
 
@@ -126,7 +141,7 @@ export class AgentService {
         workflow = await this.agentWorkflowGraphFactory.createGraph().invoke(
           {
             images: payload.images,
-            message: payload.message,
+            message: effectiveMessage,
             requestedMode: payload.mode,
             threadId,
           },
@@ -145,6 +160,40 @@ export class AgentService {
         );
 
         throwIfAborted(signal);
+
+        if (this.shouldRequestInteractiveDeliveryChoice({ selectedSkills })) {
+          try {
+            const skillChoice = await this.waitForInteractiveDeliveryChoice({
+              message: payload.message,
+              signal,
+              writer,
+            });
+
+            this.writeInteractiveDeliveryChoiceStatus(writer, {
+              selectedOptionId: skillChoice.optionId,
+              status: "selected",
+            });
+            effectiveMessage = this.buildEffectiveUserMessage({
+              message: payload.message,
+              skillChoice,
+            });
+          } catch (error) {
+            if (error instanceof AgentChoiceTimeoutError) {
+              this.writeInteractiveDeliveryChoiceStatus(writer, {
+                status: "expired",
+              });
+              this.writeTextStreamToWriter(
+                writer,
+                "方案选择已超时。本轮 Agent 流已结束，请重新发送需求后再选择执行方案。",
+              );
+              return;
+            }
+
+            throw error;
+          }
+
+          throwIfAborted(signal);
+        }
 
         // 阶段 5：准备模型上下文。
         // 这里会读取数据库中的历史消息，计算 token，用 running summary 压缩旧消息，并返回最终可发送的消息列表。
@@ -198,7 +247,7 @@ export class AgentService {
           imageRole: workflow.imageRole,
           images: payload.images,
           intent: workflow.intent,
-          message: payload.message,
+          message: effectiveMessage,
           threadId,
         };
 
@@ -266,7 +315,7 @@ export class AgentService {
                   hasImages: workflow.hasImages,
                   imageRole: workflow.imageRole,
                   images: payload.images,
-                  message: payload.message,
+                  message: effectiveMessage,
                 },
               ),
             },
@@ -472,11 +521,15 @@ export class AgentService {
     writer: AgentTraceWriter,
     text: string,
     trace?: AgentExecutionTrace,
+    metadata?: Record<string, unknown>,
   ) {
     const textId = randomUUID();
     // AI SDK UIMessageStream 的文本结构是 start -> text-start -> text-delta* -> text-end -> finish。
     // 手写一个最小 AI SDK 文本流，用于 image 占位等不经过 LangChain graph 的分支。
-    writer.write({ type: "start" });
+    writer.write({
+      ...(metadata ? { messageMetadata: metadata } : {}),
+      type: "start",
+    });
 
     if (trace) {
       this.writeTrace(writer, trace);
@@ -495,8 +548,147 @@ export class AgentService {
     writer.write({ id: textId, type: "text-end" });
     writer.write({
       finishReason: "stop",
+      ...(metadata ? { messageMetadata: metadata } : {}),
       type: "finish",
     });
+  }
+
+  private buildEffectiveUserMessage({
+    message,
+    skillChoice,
+  }: {
+    message: string;
+    skillChoice: AgentSkillChoiceSubmitRequest;
+  }) {
+    return [
+      "用户已在页面选择 interactive-delivery skill 的执行方案, 请现在继续执行, 不要再次要求用户选择方案。",
+      `原始需求: ${skillChoice.originalRequest}`,
+      `已选方案: ${skillChoice.optionId}`,
+      `方案执行要求: ${skillChoice.instruction}`,
+      `用户原始文本: ${message}`,
+      "如果 interactive_delivery_create_execution_brief 工具可用, 先调用它生成执行简报, 再产出最终结果。",
+    ].join("\n\n");
+  }
+
+  private shouldRequestInteractiveDeliveryChoice({
+    selectedSkills,
+  }: {
+    selectedSkills: readonly { id: string }[];
+  }) {
+    return selectedSkills.some(
+      (skill) => skill.id === INTERACTIVE_DELIVERY_SKILL_ID,
+    );
+  }
+
+  private waitForInteractiveDeliveryChoice({
+    message,
+    signal,
+    writer,
+  }: {
+    message: string;
+    signal?: AbortSignal;
+    writer: AgentTraceWriter;
+  }) {
+    const originalRequest = this.normalizeInteractiveDeliveryOriginalRequest(message);
+    const { choiceId, waitForChoice } = this.agentChoiceService.createChoice({
+      originalRequest,
+      signal,
+    });
+
+    writer.write({
+      messageMetadata: this.createInteractiveDeliveryChoiceMetadata({
+        choiceId,
+        originalRequest,
+      }),
+      type: "start",
+    });
+
+    return waitForChoice;
+  }
+
+  private writeInteractiveDeliveryChoiceStatus(
+    writer: AgentTraceWriter,
+    status:
+      | {
+          selectedOptionId: SkillChoiceOptionId;
+          status: "selected";
+        }
+      | {
+          status: "expired";
+        },
+  ) {
+    writer.write({
+      messageMetadata: {
+        kind: "skill-choice",
+        ...status,
+      },
+      type: "message-metadata",
+    });
+  }
+
+  private normalizeInteractiveDeliveryOriginalRequest(
+    message: string,
+  ) {
+    return message.trim() || "用户提交了一个需要方案选择的请求。";
+  }
+
+  private createInteractiveDeliveryChoiceMetadata({
+    choiceId,
+    originalRequest,
+  }: {
+    choiceId: string;
+    originalRequest: string;
+  }): Record<string, unknown> {
+    const options: Array<{
+      description: string;
+      instruction: string;
+      label: string;
+      optionId: SkillChoiceOptionId;
+    }> = [
+      {
+        description: "用最短路径给出可用结果，适合低风险、想快速推进的请求。",
+        instruction:
+          "快速执行：直接给出最小可用结果，压缩背景解释，只保留必要假设和关键下一步。",
+        label: "快速执行",
+        optionId: "quick",
+      },
+      {
+        description: "先说明执行思路，再完成主体结果，并补充验证点和风险。",
+        instruction:
+          "平衡执行：先给简短思路，再完成主体交付，最后列出必要验证点、风险和影响范围。",
+        label: "平衡执行",
+        optionId: "balanced",
+      },
+      {
+        description: "适合复杂任务，先比较取舍，再给完整结果和后续检查清单。",
+        instruction:
+          "深入执行：先分析关键取舍和假设，再给完整结果，并补充边界、风险、验证清单和可选后续动作。",
+        label: "深入执行",
+        optionId: "deep",
+      },
+    ];
+
+    return {
+      choiceId,
+      kind: "skill-choice",
+      originalRequest,
+      question: "请选择这个 skill 后续执行时采用的方案。",
+      skillId: INTERACTIVE_DELIVERY_SKILL_ID,
+      status: "pending",
+      title: "方案选择执行",
+      options: options.map((option) => ({
+        description: option.description,
+        id: option.optionId,
+        label: option.label,
+        prompt: `我选择「${option.label}」，请继续执行。`,
+        skillChoice: {
+          instruction: option.instruction,
+          optionId: option.optionId,
+          originalRequest,
+          skillId: INTERACTIVE_DELIVERY_SKILL_ID,
+        },
+      })),
+    };
   }
 
   private chunkText(text: string) {

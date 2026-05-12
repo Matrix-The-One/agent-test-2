@@ -9,6 +9,7 @@ import { AgentModelCatalogService } from "./Application/Services/agentModelCatal
 import { AgentService } from "./Application/Services/agentService.js";
 import { AgentTokenCountService } from "./Application/Services/agentTokenCountService.js";
 import { AgentContextWindowService } from "./Application/Services/agentContextWindowService.js";
+import { AgentChoiceService } from "./Application/Services/agentChoiceService.js";
 import { AgentGraphFactory } from "./Infrastructure/Factories/agentGraphFactory.js";
 import { AgentModelFactory } from "./Infrastructure/Factories/agentModelFactory.js";
 import { AgentWorkflowGraphFactory } from "./Infrastructure/Factories/agentWorkflowGraphFactory.js";
@@ -25,6 +26,8 @@ import { AgentController } from "./Presentation/Http/agentController.js";
   providers: [
     // 顶层编排：接收一次对话请求，串起路由、上下文、执行图、流式输出和落库。
     AgentService,
+    // 人机选择等待：把前端选择提交映射回当前挂起的 Agent 流。
+    AgentChoiceService,
     // 执行图工厂：WorkflowGraph 负责前置路由，AgentGraph 负责真正的多 Agent 执行。
     AgentGraphFactory,
     AgentWorkflowGraphFactory,

@@ -10,6 +10,7 @@ import {
   getHealthState,
   getChatConversationMessages,
   listChatConversations,
+  submitChatSkillChoice,
   updateChatConversation,
 } from "@/services/chat/chatApi";
 import {
@@ -18,6 +19,7 @@ import {
   getMessageImageFiles,
   getLatestUserMessageText,
   getMessageText,
+  getSkillChoiceMetadata,
   mapPersistedConversationMessageToChatMessage,
 } from "@/utils/chat/messageUtils";
 import { chatQueryKeys } from "@/services/chat/queryKeys";
@@ -27,6 +29,8 @@ import type {
   ChatMessage,
   ChatRequestImage,
   ChatRequestMode,
+  ChatSkillChoiceMetadata,
+  ChatSkillChoiceOption,
   ChatUser,
 } from "@/store/chat/types";
 
@@ -147,6 +151,12 @@ export const useAgentChatWorkspace = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isStreamingRenderPaused, setStreamingRenderPaused] = useState(false);
+  const [submittingSkillChoiceId, setSubmittingSkillChoiceId] = useState<string | null>(
+    null,
+  );
+  const [skillChoiceSubmitError, setSkillChoiceSubmitError] = useState<string | null>(
+    null,
+  );
   const activeConversationIdRef = useRef<string | undefined>(activeConversationId);
   const currentUserRef = useRef<ChatUser | null>(null);
   const draftRef = useRef<HTMLTextAreaElement>(null);
@@ -283,6 +293,12 @@ export const useAgentChatWorkspace = () => {
   const awaitingClarification = Boolean(
     getClarificationMetadata(lastAssistantMessage),
   );
+  const latestSkillChoice = getSkillChoiceMetadata(lastAssistantMessage);
+  const awaitingSkillChoice = Boolean(
+    status === "streaming"
+    && latestSkillChoice?.choiceId
+    && (latestSkillChoice.status ?? "pending") === "pending",
+  );
   const latestAgentTrace = getLatestAgentTrace(deferredMessages);
 
   useEffect(() => {
@@ -296,6 +312,15 @@ export const useAgentChatWorkspace = () => {
   useEffect(() => {
     pendingConversationIdRef.current = pendingConversationId;
   }, [pendingConversationId]);
+
+  useEffect(() => {
+    if (
+      submittingSkillChoiceId
+      && (!awaitingSkillChoice || latestSkillChoice?.choiceId !== submittingSkillChoiceId)
+    ) {
+      setSubmittingSkillChoiceId(null);
+    }
+  }, [awaitingSkillChoice, latestSkillChoice?.choiceId, submittingSkillChoiceId]);
 
   useEffect(() => {
     return () => {
@@ -451,6 +476,31 @@ export const useAgentChatWorkspace = () => {
     await sendPrompt(suggestion);
   };
 
+  const handleSkillChoiceSelect = async (
+    choice: ChatSkillChoiceMetadata,
+    option: ChatSkillChoiceOption,
+  ) => {
+    if (
+      !choice.choiceId
+      || submittingSkillChoiceId
+      || (choice.status ?? "pending") !== "pending"
+    ) {
+      return;
+    }
+
+    setSkillChoiceSubmitError(null);
+    setSubmittingSkillChoiceId(choice.choiceId);
+
+    try {
+      await submitChatSkillChoice(choice.choiceId, option.skillChoice);
+    } catch (error) {
+      setSubmittingSkillChoiceId(null);
+      setSkillChoiceSubmitError(
+        error instanceof Error ? error.message : "方案提交失败。",
+      );
+    }
+  };
+
   const handleStarterPrompt = async (
     prompt: string,
     mode?: ChatRequestMode,
@@ -516,6 +566,8 @@ export const useAgentChatWorkspace = () => {
     stop();
     setSidebarOpen(false);
     setSelectedMode(null);
+    setSubmittingSkillChoiceId(null);
+    setSkillChoiceSubmitError(null);
     focusDraftAtEnd();
 
     if (conversationId === activeConversationIdRef.current) {
@@ -579,6 +631,8 @@ export const useAgentChatWorkspace = () => {
     setSidebarOpen(false);
     setPendingConversationId(null);
     pendingConversationIdRef.current = null;
+    setSubmittingSkillChoiceId(null);
+    setSkillChoiceSubmitError(null);
     setChatId(nextDraftConversationId);
     setChatSeedMessages([]);
     setDraftConversationId(nextDraftConversationId);
@@ -609,6 +663,8 @@ export const useAgentChatWorkspace = () => {
     setSidebarOpen(false);
     setPendingConversationId(null);
     pendingConversationIdRef.current = null;
+    setSubmittingSkillChoiceId(null);
+    setSkillChoiceSubmitError(null);
     setChatId(nextDraftConversationId);
     setChatSeedMessages([]);
     setDraftConversationId(nextDraftConversationId);
@@ -642,6 +698,7 @@ export const useAgentChatWorkspace = () => {
 
   return {
     awaitingClarification,
+    awaitingSkillChoice,
     chatId,
     currentUser,
     deferredMessages,
@@ -658,6 +715,7 @@ export const useAgentChatWorkspace = () => {
     handleImageSelection,
     handleModeSelect,
     handleRemovePendingImage,
+    handleSkillChoiceSelect,
     handleStarterPrompt,
     handleSubmit,
     hasConversation,
@@ -675,10 +733,12 @@ export const useAgentChatWorkspace = () => {
     setDraft,
     setSidebarOpen,
     setStreamingRenderPaused,
+    skillChoiceSubmitError,
     sidebarCollapsed,
     sidebarOpen,
     status,
     stop,
+    submittingSkillChoiceId,
     toggleSidebar,
     toggleSidebarCollapsed,
   };

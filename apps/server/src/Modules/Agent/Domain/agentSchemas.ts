@@ -9,6 +9,17 @@ const agentChatImageInputSchema = z.object({
   url: z.string().trim().min(1),
 });
 
+export const agentSkillChoiceSubmitSchema = z.object({
+  instruction: z.string().trim().min(1).max(1000),
+  optionId: z.enum(["quick", "balanced", "deep"]),
+  originalRequest: z.string().trim().min(1).max(4000),
+  skillId: z.literal("interactive-delivery"),
+});
+
+export const agentChoiceIdParamSchema = z.object({
+  choiceId: z.uuid(),
+});
+
 export const agentChatRequestSchema = z
   .object({
     // 当前限制最多 4 张图，避免请求体和多模态上下文不可控。
@@ -25,3 +36,7 @@ export const agentChatRequestSchema = z
   });
 
 export type AgentChatRequest = z.infer<typeof agentChatRequestSchema>;
+export type AgentChoiceIdParam = z.infer<typeof agentChoiceIdParamSchema>;
+export type AgentSkillChoiceSubmitRequest = z.infer<
+  typeof agentSkillChoiceSubmitSchema
+>;

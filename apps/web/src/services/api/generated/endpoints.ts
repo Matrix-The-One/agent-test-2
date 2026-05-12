@@ -13,6 +13,7 @@ import type {
 
 import type {
   AgentChatRequestDto,
+  AgentSkillChoiceSubmitRequestDto,
   CreateConversation201,
   CreateConversationRequestDto,
   DeleteConversation200,
@@ -26,6 +27,7 @@ import type {
   GetUser200,
   ListConversations200,
   ListConversationsParams,
+  SubmitAgentSkillChoice200,
   UpdateConversation200,
   UpdateConversationRequestDto
 } from './models';
@@ -128,6 +130,16 @@ export const streamAgentReply = (
     );
   }
 
+export const submitAgentSkillChoice = (
+    choiceId: string,
+    agentSkillChoiceSubmitRequestDto: AgentSkillChoiceSubmitRequestDto, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<SubmitAgentSkillChoice200>> => {
+    return axios.default.post(
+      `/api/agent/choices/${choiceId}`,
+      agentSkillChoiceSubmitRequestDto,options
+    );
+  }
+
 export type GetHealthResult = AxiosResponse<GetHealth200>
 export type EnsureUserResult = AxiosResponse<EnsureUser201>
 export type GetUserResult = AxiosResponse<GetUser200>
@@ -138,3 +150,4 @@ export type DeleteConversationResult = AxiosResponse<DeleteConversation200>
 export type GetConversationMessagesResult = AxiosResponse<GetConversationMessages200>
 export type GetCatalogResult = AxiosResponse<GetCatalog200>
 export type StreamAgentReplyResult = AxiosResponse<string>
+export type SubmitAgentSkillChoiceResult = AxiosResponse<SubmitAgentSkillChoice200>

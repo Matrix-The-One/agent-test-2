@@ -877,6 +877,106 @@
           "agent"
         ]
       }
+    },
+    "/api/agent/choices/{choiceId}": {
+      "post": {
+        "operationId": "submitAgentSkillChoice",
+        "parameters": [
+          {
+            "name": "choiceId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSkillChoiceSubmitRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AgentSkillChoiceSubmitResultDto",
+                      "nullable": true
+                    },
+                    "errorCode": {
+                      "example": null,
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "errorMsg": {
+                      "example": "",
+                      "type": "string"
+                    },
+                    "errors": {
+                      "additionalProperties": true,
+                      "nullable": true,
+                      "type": "object"
+                    },
+                    "success": {
+                      "example": true,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "data",
+                    "errorMsg"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "agent"
+        ]
+      }
     }
   },
   "info": {
@@ -1258,6 +1358,7 @@
                 "workspace-inspection",
                 "solution-architecture",
                 "delivery-planning",
+                "interactive-delivery",
                 "quality-guard",
                 "content-creation",
                 "file-creation",
@@ -1423,6 +1524,7 @@
                 "workspace-inspection",
                 "solution-architecture",
                 "delivery-planning",
+                "interactive-delivery",
                 "quality-guard",
                 "content-creation",
                 "file-creation",
@@ -1604,6 +1706,7 @@
               "workspace-inspection",
               "solution-architecture",
               "delivery-planning",
+              "interactive-delivery",
               "quality-guard",
               "content-creation",
               "file-creation",
@@ -1667,6 +1770,7 @@
                 "workspace-inspection",
                 "solution-architecture",
                 "delivery-planning",
+                "interactive-delivery",
                 "quality-guard",
                 "content-creation",
                 "file-creation",
@@ -1731,6 +1835,56 @@
         "required": [
           "images",
           "message"
+        ]
+      },
+      "AgentSkillChoiceSubmitResultDto": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "example": true
+          },
+          "choiceId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "accepted",
+          "choiceId"
+        ]
+      },
+      "AgentSkillChoiceSubmitRequestDto": {
+        "type": "object",
+        "properties": {
+          "instruction": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "optionId": {
+            "type": "string",
+            "enum": [
+              "quick",
+              "balanced",
+              "deep"
+            ]
+          },
+          "originalRequest": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "skillId": {
+            "type": "string",
+            "enum": [
+              "interactive-delivery"
+            ]
+          }
+        },
+        "required": [
+          "instruction",
+          "optionId",
+          "originalRequest",
+          "skillId"
         ]
       }
     }

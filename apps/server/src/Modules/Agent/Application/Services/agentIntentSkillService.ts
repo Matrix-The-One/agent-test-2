@@ -63,6 +63,19 @@ const LOCATION_KEYWORDS = [
   "骑行",
 ] as const;
 
+const INTERACTIVE_DELIVERY_KEYWORDS = [
+  "方案选择",
+  "选择方案",
+  "选方案",
+  "让我选择",
+  "先让我选",
+  "页面选择",
+  "交互式执行",
+  "interactive delivery",
+  "choose a plan",
+  "pick an option",
+] as const;
+
 @Injectable()
 export class AgentIntentSkillService {
   @Inject(AppConfigService)
@@ -173,10 +186,14 @@ export class AgentIntentSkillService {
         skillIds.push("amap-maps");
       }
 
+      if (containsAny(normalizedMessage, INTERACTIVE_DELIVERY_KEYWORDS)) {
+        skillIds.push("interactive-delivery");
+      }
+
       return {
         reason:
           skillIds.length > 0
-            ? "chat 意图下命中了项目上下文、工作区扫描、脚本执行、文件创建或位置服务相关关键词, 补充相应 skill。"
+            ? "chat 意图下命中了项目上下文、工作区扫描、脚本执行、文件创建、位置服务或方案选择相关关键词, 补充相应 skill。"
             : hasImages
               ? `chat 意图下图片角色为 ${imageRole}, 默认直接回答, 不额外挂载专门 skill。`
               : "chat 意图默认直接回答, 不额外挂载专门 skill。",
@@ -191,6 +208,10 @@ export class AgentIntentSkillService {
 
       if (containsAny(normalizedMessage, FILE_CREATION_KEYWORDS)) {
         skillIds.push("file-creation");
+      }
+
+      if (containsAny(normalizedMessage, INTERACTIVE_DELIVERY_KEYWORDS)) {
+        skillIds.push("interactive-delivery");
       }
 
       return {
@@ -290,6 +311,10 @@ export class AgentIntentSkillService {
         ])
       ) {
         skillIds.push("delivery-planning");
+      }
+
+      if (containsAny(normalizedMessage, INTERACTIVE_DELIVERY_KEYWORDS)) {
+        skillIds.push("interactive-delivery");
       }
 
       return {

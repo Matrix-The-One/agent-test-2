@@ -14,6 +14,7 @@ export const PublicAgentSkillDtoId = {
   'workspace-inspection': 'workspace-inspection',
   'solution-architecture': 'solution-architecture',
   'delivery-planning': 'delivery-planning',
+  'interactive-delivery': 'interactive-delivery',
   'quality-guard': 'quality-guard',
   'content-creation': 'content-creation',
   'file-creation': 'file-creation',

@@ -36,11 +36,44 @@ export const CHAT_REQUEST_MODE_LABELS: Record<ChatRequestMode, string> = {
   writing: "文章编写",
 };
 
-export type ChatMessageMetadata = {
+export type ChatSkillChoiceRequest = {
+  instruction: string;
+  optionId: "quick" | "balanced" | "deep";
+  originalRequest: string;
+  skillId: "interactive-delivery";
+};
+
+export type ChatSkillChoiceStatus = "expired" | "pending" | "selected";
+
+export type ChatSkillChoiceOption = {
+  description: string;
+  id: ChatSkillChoiceRequest["optionId"];
+  label: string;
+  prompt: string;
+  skillChoice: ChatSkillChoiceRequest;
+};
+
+export type ChatClarificationMetadata = {
   kind?: "clarification";
   suggestions?: string[];
   title?: string;
 };
+
+export type ChatSkillChoiceMetadata = {
+  choiceId?: string;
+  kind: "skill-choice";
+  options: ChatSkillChoiceOption[];
+  originalRequest: string;
+  question: string;
+  selectedOptionId?: ChatSkillChoiceOption["id"];
+  skillId: "interactive-delivery";
+  status?: ChatSkillChoiceStatus;
+  title: string;
+};
+
+export type ChatMessageMetadata =
+  | ChatClarificationMetadata
+  | ChatSkillChoiceMetadata;
 
 export type ChatAgentSkillCategory =
   AgentTraceSpecialistDtoCategory;
